@@ -2,25 +2,51 @@
 
 ## Overview
 
-Conquistador is a quiz-based territory game for 2 to 3 players sharing one
-keyboard. Players buzz in to answer general knowledge questions. The correct
-answerer claims a region on the map. The game ends when one player controls
+Conquistador is a quiz-based territory game for 2 to 3 players, each on their
+own computer on the same local network (LAN). Players buzz in to answer
+general knowledge questions. The correct answerer claims a region on the map. The game ends when one player controls
 every region.
 
 ## Players
 
-- 2 or 3 players.
-- Each player has a dedicated buzz key:
-  - Player 1: `A`
-  - Player 2: `L`
-  - Player 3: `;`
-- Each player has a color (red, blue, green) shown on the regions they own.
+- 2 or 3 players, each on their own computer.
+- Each player chooses a username when the game opens.
+- Each player has a color (red, blue, green, in joining order) shown on the
+  regions they own.
+
+## Rooms
+
+- One player creates a room. Their computer hosts the game and they play too.
+- Other players see rooms on the local network listed automatically, or join
+  by typing the host's IP address.
+- A room holds at most 3 players. Nobody can join after the game starts.
+- The host clicks Start once at least 2 players are in the room.
 
 ## Setup
 
-- The map starts with all regions unclaimed (neutral gray).
+- The map has 12 regions, all unclaimed (neutral gray) at the start.
 - Questions are drawn at random from `data/questions.json`.
-- Players agree before the game starts on the number of players.
+
+## Opening: choosing starting regions
+
+1. When the host starts, every player has 15 seconds to pick one region.
+2. Picks are secret. A player can change their pick until the timer ends.
+3. When the timer ends, all picks are revealed at once. A region picked by
+   only one player goes to that player.
+4. If 2 or 3 players picked the same region, they play a bonus question for it:
+   - All of them see the question at the same moment and answer with `1`-`3`
+     or by clicking.
+   - The quickest correct answer wins the region, judged by the order answers
+     reach the host.
+   - A wrong answer locks that player out of this question.
+   - If everyone is wrong, or nobody answers within 10 seconds, a new bonus
+     question is asked.
+   - Players not in the duel see the question but cannot answer.
+5. Losers of a bonus question get a new 15-second pick, limited to free
+   regions. If they pick the same region again, another bonus question
+   decides it.
+6. A player who never picks gets a random free region once all duels are done.
+7. When every player owns one starting region, the main game begins.
 
 ## Turn structure
 
@@ -70,7 +96,7 @@ Each round has two phases.
 
 ## Open questions (to decide before the first full game)
 
-- Should the first claim in a game be free (any region), or should players
-  start in fixed positions?
+- Which key buzzes in during the main game, now that each player has their
+  own keyboard?
 - How many seconds should the time limit be?
 - Should a wrong answer cost the player their next claim?

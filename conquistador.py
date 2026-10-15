@@ -1,122 +1,177 @@
-import json
-import random
-from pathlib import Path
+"""Conquistador: entry point, main loop and scene switching."""
+import socket
+import time
 
 import pygame
 
-pygame.init()
-WIDTH, HEIGHT = 900, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Conquistador prototype")
-clock = pygame.time.Clock()
-font = pygame.font.SysFont(None, 30)
-big_font = pygame.font.SysFont(None, 42)
+from net import protocol
+from net.client import GameClient
+from net.discovery import RoomAnnouncer, RoomBrowser
+from net.server import GameServer
+from ui import scenes
+from ui.widgets import HEIGHT, WIDTH
 
-NUM_PLAYERS = 3
-COLORS = [(220, 60, 60), (60, 120, 220), (60, 180, 80)]
-BUZZ_KEYS = [pygame.K_a, pygame.K_l, pygame.K_SEMICOLON]   # one key per player
-ANSWER_KEYS = [pygame.K_1, pygame.K_2, pygame.K_3]
 
-def load_questions():
-    path = Path(__file__).parent / "data" / "questions.json"
-    with open(path, encoding="utf-8") as f:
-        return [q for q in json.load(f) if q.get("reviewed")]
+def guess_local_ip():
+    """The LAN address others should use. Connecting a UDP socket sends nothing."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("10.255.255.255", 1))
+            return s.getsockname()[0]
+    except OSError:
+        return "127.0.0.1"
 
-QUESTIONS = load_questions()
 
-# Grid of regions (replace later with a real map)
-GRID_COLS, GRID_ROWS = 4, 3
-MARGIN = 20
-CELL_W = (WIDTH - MARGIN * 2) // GRID_COLS
-CELL_H = (HEIGHT - 150 - MARGIN) // GRID_ROWS
-territories = []
-for row in range(GRID_ROWS):
-    for col in range(GRID_COLS):
-        rect = pygame.Rect(MARGIN + col * CELL_W, 150 + row * CELL_H,
-                           CELL_W - 4, CELL_H - 4)
-        territories.append({"rect": rect, "owner": None})
+class App:
+    def __init__(self, screen):
+        self.screen = screen
+        self.name = None
+        self.local_ip = guess_local_ip()
+        self.browser = None
+        self.server = None
+        self.announcer = None
+        self.client = None
+        self.error = None
+        self._reset_session()
+        self.scene_key = None
+        self.scene = None
 
-def text(s, pos, color=(255, 255, 255), f=font):
-    screen.blit(f.render(s, True, color), pos)
+    def _reset_session(self):
+        self.you = None
+        self.lobby = None
+        self.state = None
+        self.state_at = 0.0
+        self.answered_q = None
 
-def new_question():
-    global question, buzzed, locked_out
-    question = random.choice(QUESTIONS)
-    buzzed = None
-    locked_out = set()
+    # ---- actions used by scenes ----------------------------------------
 
-def check_winner():
-    owners = {t["owner"] for t in territories}
-    if len(owners) == 1 and None not in owners:
-        return owners.pop()
-    return None
+    def set_name(self, name):
+        self.name = name
+        self.browser = RoomBrowser()
+        self.error = self.browser.error
 
-state = "question"      # "question", "pick", or "over"
-current_player = None
-winner = None
-new_question()
+    def create_room(self):
+        server = GameServer(f"{self.name}'s room")
+        try:
+            server.start()
+        except OSError:
+            self.error = f"Can't host: port {protocol.GAME_PORT} is already in use"
+            return
+        self.server = server
+        self.announcer = RoomAnnouncer(server)
+        self.join("127.0.0.1", server.port)
 
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+    def join(self, ip, port):
+        self.error = None
+        try:
+            self.client = GameClient(ip, port, self.name)
+        except OSError:
+            self.error = f"Could not connect to {ip}"
+            self._stop_hosting()
 
-        # Buzzing in and answering
-        if event.type == pygame.KEYDOWN and state == "question":
-            if buzzed is None:
-                for p, key in enumerate(BUZZ_KEYS):
-                    if event.key == key and p not in locked_out:
-                        buzzed = p
-            else:
-                for choice, key in enumerate(ANSWER_KEYS):
-                    if event.key == key and choice < len(question["choices"]):
-                        if choice == question["answer"]:
-                            current_player = buzzed
-                            state = "pick"
-                        else:
-                            locked_out.add(buzzed)
-                            buzzed = None
-                            if len(locked_out) == NUM_PLAYERS:
-                                new_question()   # nobody got it, next question
+    def leave(self):
+        if self.client:
+            self.client.close()
+        self.client = None
+        self._stop_hosting()
+        self._reset_session()
 
-        # Claiming a region
-        if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1
-                and state == "pick"):
-            for t in territories:
-                if t["rect"].collidepoint(event.pos) and t["owner"] != current_player:
-                    t["owner"] = current_player
-                    winner = check_winner()
-                    if winner is not None:
-                        state = "over"
-                    else:
-                        state = "question"
-                        new_question()
-                    break
+    def send(self, msg):
+        if self.client:
+            self.client.send(msg)
 
-    # Drawing
-    screen.fill((30, 30, 40))
-    for t in territories:
-        color = COLORS[t["owner"]] if t["owner"] is not None else (90, 90, 90)
-        pygame.draw.rect(screen, color, t["rect"])
+    def answer(self, choice):
+        self.answered_q = self.state["duel"]["question_no"]
+        self.send({"t": "answer", "choice": choice})
 
-    if state == "question":
-        text(question["q"], (MARGIN, 20), f=big_font)
-        choices = "    ".join(f"{i+1}) {c}" for i, c in enumerate(question["choices"]))
-        text(choices, (MARGIN, 80))
-        if buzzed is None:
-            text("Buzz in: P1 = A   P2 = L   P3 = ;", (MARGIN, 115))
-        else:
-            text(f"Player {buzzed + 1} answers: press 1-3", (MARGIN, 115),
-                 COLORS[buzzed])
-    elif state == "pick":
-        text(f"Player {current_player + 1}: click a region to claim it",
-             (MARGIN, 60), COLORS[current_player], big_font)
-    elif state == "over":
-        text(f"Player {winner + 1} conquers the map!", (MARGIN, 60),
-             COLORS[winner], big_font)
+    def remaining(self):
+        if not self.state:
+            return 0.0
+        return max(0.0, self.state["remaining"] - (time.monotonic() - self.state_at))
 
-    pygame.display.flip()
-    clock.tick(60)
+    def player_name(self, pid):
+        for p in (self.lobby or {}).get("players", []):
+            if p["id"] == pid:
+                return p["name"]
+        return f"Player {pid + 1}"
 
-pygame.quit()
+    # ---- networking ----------------------------------------------------
+
+    def _stop_hosting(self):
+        if self.announcer:
+            self.announcer.stop()
+        if self.server:
+            self.server.stop()
+        self.announcer = self.server = None
+
+    def poll_network(self):
+        if not self.client:
+            return
+        for msg in self.client.messages():
+            kind = msg.get("t")
+            if kind == "welcome":
+                self.you = msg["you"]
+            elif kind == "lobby":
+                self.lobby = msg
+            elif kind == "state":
+                self.state = msg
+                self.state_at = time.monotonic()
+            elif kind == "error":
+                self.error = msg["msg"]
+            elif kind == "disconnected":
+                error = self.error or "Disconnected from the room"
+                self.leave()
+                self.error = error
+                return
+
+    # ---- scenes --------------------------------------------------------
+
+    def current_key(self):
+        if not self.name:
+            return "name"
+        if not self.client:
+            return "lobby"
+        if not self.state:
+            return "room"
+        return self.state["phase"]
+
+    def update_scene(self):
+        key = self.current_key()
+        if key != self.scene_key:
+            self.scene_key = key
+            self.scene = {
+                "name": scenes.NameEntry, "lobby": scenes.Lobby, "room": scenes.Room,
+                "pick": scenes.MapPick, "duel": scenes.Duel, "done": scenes.Done,
+            }[key](self)
+
+    def run(self):
+        clock = pygame.time.Clock()
+        running = True
+        while running:
+            self.poll_network()
+            self.update_scene()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT or (
+                        event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                    running = False
+                else:
+                    self.scene.handle(event)
+            self.update_scene()
+            self.scene.draw(self.screen)
+            pygame.display.flip()
+            clock.tick(60)
+        self.leave()
+        if self.browser:
+            self.browser.stop()
+
+
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Conquistador")
+    App(screen).run()
+    pygame.quit()
+
+
+if __name__ == "__main__":
+    main()

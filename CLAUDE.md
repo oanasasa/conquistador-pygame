@@ -39,6 +39,10 @@ regions on a map. Questions and answers are game content.
 
 - Keep the game loop, rendering, and question logic in separate modules.
 - Do not add network calls, telemetry, or auto-update code without asking.
+  LAN-only networking for rooms is approved (TCP 5555 for the game, UDP 5556
+  for room discovery). No internet calls.
+- The host (`net/server.py`) is authoritative: only it holds answers and judges
+  them. Clients receive questions without the `answer` field.
 - Do not change the answer-checking logic to accept answers from the client
   in a way that could be spoofed without explaining the change first.
 

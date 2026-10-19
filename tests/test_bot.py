@@ -57,3 +57,15 @@ def test_full_game_with_only_bots_finishes():
         t += 0.1
     assert g.is_done()
     assert sorted(g.owner.values()) == [0, 1, 2]
+
+
+def test_bot_pick_delay_feels_human_and_ends_round_with_human():
+    assert PICK_DELAY[0] >= 3.0
+    g = make()
+    g.submit_pick(0, 5)                      # human picked right away
+    bot = Bot(1, random.Random(5))
+    bot.act(g, 0.0)
+    bot.act(g, PICK_DELAY[0] - 0.1)
+    assert 1 not in g.picks                  # never instant
+    bot.act(g, PICK_DELAY[1])
+    assert g.tick(PICK_DELAY[1]) and g.phase != "pick"

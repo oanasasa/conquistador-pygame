@@ -23,8 +23,8 @@ every region.
 - The host clicks Start once at least 2 players are in the room.
 - The host can add computer players (bots) to fill empty seats, so one person
   can play alone. Bots count as players and follow the same rules. A bot
-  picks a random free region and answers bonus questions after a few seconds,
-  correctly about 60% of the time.
+  picks a random free region after 3 to 9 seconds, like a person thinking, and
+  answers bonus questions after a few seconds, correctly about 60% of the time.
 
 ## Setup
 
@@ -34,9 +34,11 @@ every region.
 ## Opening: choosing starting regions
 
 1. When the host starts, every player has 15 seconds to pick one region.
-2. Picks are secret. A player can change their pick until the timer ends.
-3. When the timer ends, all picks are revealed at once. A region picked by
-   only one player goes to that player.
+2. Picks are secret. A player can change their pick while others are still
+   choosing.
+3. The round ends as soon as every player has picked, or when the 15 seconds
+   run out. All picks are then revealed at once. A region picked by only one
+   player goes to that player.
 4. If 2 or 3 players picked the same region, they play a bonus question for it:
    - All of them see the question at the same moment and answer with `1`-`3`
      or by clicking.

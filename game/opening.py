@@ -88,8 +88,10 @@ class OpeningPhase:
         return "wrong"
 
     def tick(self, now):
-        """Handle expired timers. Returns True if the state changed."""
-        if self.phase == "pick" and now >= self.deadline:
+        """Handle expired timers. Returns True if the state changed.
+
+        A pick round ends early once every picker has chosen a region."""
+        if self.phase == "pick" and (now >= self.deadline or self.picks.keys() >= self.pickers):
             self._end_pick_round(now)
             return True
         if self.phase == "duel" and now >= self.deadline:

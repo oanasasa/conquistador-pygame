@@ -170,7 +170,7 @@ def owner_map(state):
 
 
 class MapPick(Scene):
-    """15-second hidden pick. Click a free region; you may change it until time runs out."""
+    """15-second hidden pick. Ends early once everyone has picked."""
 
     def handle(self, event):
         st = self.app.state
@@ -187,9 +187,9 @@ class MapPick(Scene):
         remaining = self.app.remaining()
         if me in st["pickers"]:
             text(screen, "Pick your starting region!", (MARGIN, 15), PLAYER_COLORS[me], size=42)
-            hint = ("Picks are secret. You can change yours until the timer ends."
+            hint = ("Picks are secret. The round ends when everyone has picked."
                     if st["your_pick"] is None else
-                    f"You picked region {st['your_pick'] + 1}. Click another to change.")
+                    f"You picked region {st['your_pick'] + 1}. Waiting for the others...")
             text(screen, hint, (MARGIN, 60), GRAY, size=26)
         else:
             names = ", ".join(self.app.player_name(p) for p in st["pickers"])

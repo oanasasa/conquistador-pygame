@@ -145,3 +145,23 @@ def test_answer_never_in_public_state():
     g.submit_pick(1, 1)
     t = end_picks(g, 0)
     assert "answer" not in g.public_state(0, t)["duel"]["question"]
+
+
+def test_pick_round_ends_as_soon_as_everyone_picked():
+    g = make(players=(0, 1))
+    g.submit_pick(0, 2)
+    assert not g.tick(1.0)                   # one player still choosing
+    g.submit_pick(1, 7)
+    assert g.tick(2.0)                       # both picked: no waiting for the timer
+    assert g.is_done() and g.owner == {2: 0, 7: 1}
+
+
+def test_repick_round_ends_when_the_loser_picks():
+    g = make(players=(0, 1))
+    g.submit_pick(0, 4)
+    g.submit_pick(1, 4)
+    g.tick(1.0)
+    g.answer_duel(0, RIGHT, 2.0)
+    assert g.phase == "pick" and g.pickers == {1}
+    g.submit_pick(1, 9)
+    assert g.tick(3.0) and g.is_done()

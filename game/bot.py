@@ -3,7 +3,7 @@ server, so it plays by the same rules as everyone: it submits picks and
 answers through OpeningPhase and is judged like any other player."""
 import random
 
-PICK_DELAY = (1.0, 5.0)       # seconds before the bot picks a region
+PICK_DELAY = (3.0, 9.0)       # seconds before the bot picks, like a human thinking
 ANSWER_DELAY = (1.5, 6.0)     # seconds before the bot answers a bonus question
 ACCURACY = 0.6                # chance the bot answers correctly
 

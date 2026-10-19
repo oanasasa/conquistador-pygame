@@ -3,6 +3,7 @@ import random
 from game.board import frontier, neighbors
 from game.bot import Bot
 from game.conquest import QUESTION_SECONDS, SELECT_SECONDS, TOWERS, ConquestPhase
+from game.questions import REVEAL_SECONDS
 
 # Fake question for tests only; the real bank lives in data/questions.json.
 FAKE_Q = {"q": "test", "choices": ["a", "b", "c"], "answer": 0}
@@ -64,7 +65,9 @@ def test_grab_question_correct_answers_take_their_regions():
     g.answer(0, RIGHT, t + 1)
     g.answer(1, WRONG, t + 2)              # last answer ends the question early
     assert g.owner == {0: 0, 1: 0, 11: 1}
-    assert g.last_result == {"kind": "grab", "won": {"0": 1}, "missed": [1]}
+    res = g.last_result
+    assert (res["kind"], res["won"], res["missed"]) == ("grab", {"0": 1}, [1])
+    assert [(a["player"], a["correct"]) for a in res["answers"]] == [(0, True), (1, False)]
     assert g.phase == "grab_select"
 
 
@@ -102,6 +105,16 @@ def full_board():
     return g
 
 
+def win(g, player, now):
+    """`player` answers correctly first; let the reveal for the other run out.
+    Returns the time after the reveal."""
+    assert g.answer(player, RIGHT, now) == "correct"
+    if g.reveal:
+        g.tick(now + REVEAL_SECONDS)
+        return now + REVEAL_SECONDS
+    return now
+
+
 def start_attack(g, attacker, region, now):
     assert g.phase == "war_select" and g.attacker == attacker
     assert g.select(attacker, region)
@@ -124,6 +137,8 @@ def test_attacker_wins_normal_region_then_turn_passes():
     assert g.answer(0, RIGHT, t + 2) == "correct"
     assert g.owner[6] == 0
     assert g.last_result["attacker_won"] and g.last_result["elapsed"] == 2
+    assert g.reveal and g.phase == "war_duel"      # the defender can still answer
+    g.tick(t + 2 + REVEAL_SECONDS)
     assert g.phase == "war_select" and g.attacker == 1
 
 
@@ -131,8 +146,9 @@ def test_defender_quicker_keeps_region():
     g = full_board()
     t = start_attack(g, 0, 6, 0)
     assert g.answer(1, RIGHT, t + 1) == "correct"
-    assert g.answer(0, RIGHT, t + 2) is None
+    assert g.answer(0, RIGHT, t + 2) == "late"     # right, but slower
     assert g.owner[6] == 1
+    assert g.phase == "war_select"                 # both answered: no waiting
 
 
 def test_both_wrong_or_timeout_defender_holds():
@@ -149,7 +165,7 @@ def test_both_wrong_or_timeout_defender_holds():
 def test_no_target_skips_turn():
     g = full_board()
     g.tick(SELECT_SECONDS)
-    assert g.last_result == {"kind": "skip", "attacker": 0}
+    assert (g.last_result["kind"], g.last_result["attacker"]) == ("skip", 0)
     assert g.attacker == 1
 
 
@@ -158,11 +174,11 @@ def test_base_attack_three_questions_one_tower_each():
     g.owner[2] = 0                       # player 0 now borders base 3
     t = start_attack(g, 0, 3, 0)
     assert g.attack["base"]
-    g.answer(0, RIGHT, t + 1)            # tower 1 down
+    t = win(g, 0, t + 1)                 # tower 1 down
     assert g.towers[1] == TOWERS - 1 and g.attack["tower_q"] == 2
-    g.answer(1, RIGHT, t + 2)            # defender saves tower 2
+    t = win(g, 1, t + 1)                 # defender saves tower 2
     assert g.towers[1] == TOWERS - 1 and g.attack["tower_q"] == 3
-    g.tick(t + 2 + QUESTION_SECONDS)     # nobody: tower 3 stands
+    g.tick(t + QUESTION_SECONDS)         # nobody: tower 3 stands
     assert g.towers[1] == 2
     assert g.owner[3] == 1 and g.phase == "war_select" and g.attacker == 1
 
@@ -171,8 +187,8 @@ def test_all_three_towers_in_one_attack_takes_all_land_and_wins():
     g = full_board()
     g.owner[2] = 0
     t = start_attack(g, 0, 3, 0)
-    for i in range(TOWERS):
-        g.answer(0, RIGHT, t + i)
+    for _ in range(TOWERS):
+        t = win(g, 0, t + 1)
     assert g.last_result["base_fell"]
     assert set(g.owner.values()) == {0}
     assert g.phase == "over" and g.winner == 0
@@ -183,7 +199,7 @@ def test_towers_stay_destroyed_between_attacks():
     g.owner[2] = 0
     g.towers[1] = 1                      # two towers already down earlier
     t = start_attack(g, 0, 3, 0)
-    g.answer(0, RIGHT, t + 1)
+    win(g, 0, t + 1)
     assert g.is_done() and g.winner == 0
 
 
@@ -196,14 +212,14 @@ def test_base_falls_eliminates_only_that_player_with_three():
     g._next_turn(0.0)
     t = start_attack(g, 1, 10, 0)
     assert not g.attack["base"]
-    g.answer(1, RIGHT, t + 1)
+    t = win(g, 1, t + 1)
     assert g.owner[10] == 1
-    t = start_attack(g, 2, 5, t + 1)     # player 2 attacks player 0
-    g.answer(0, RIGHT, t + 1)            # player 0 defends
+    t = start_attack(g, 2, 5, t)         # player 2 attacks player 0
+    t = win(g, 0, t + 1)                 # player 0 defends
     assert g.owner[5] == 0 and g.attacker == 0
     g.owner[7] = 0                       # give player 0 a border with base 11
-    t = start_attack(g, 0, 11, t + 1)
-    g.answer(0, RIGHT, t + 1)            # last tower falls
+    t = start_attack(g, 0, 11, t)
+    win(g, 0, t + 1)                     # last tower falls
     assert 2 not in g.players
     assert g.owner[11] == 0 and g.owner[8] == 0 and g.owner[9] == 0
     assert g.owner[10] == 1              # land taken earlier by player 1 stays
@@ -235,3 +251,38 @@ def test_bots_play_a_full_game_to_the_end():
         t += 0.1
     assert g.is_done()
     assert set(g.owner.values()) == {g.winner} and len(g.owner) == 12
+
+
+def test_war_slower_correct_answer_is_shown():
+    g = full_board()
+    t = start_attack(g, 0, 6, 0)
+    q = g.question_no
+    assert g.answer(1, RIGHT, t + 1.0, q) == "correct"     # defender quicker
+    assert g.answer(0, RIGHT, t + 1.4, q) == "late"
+    assert g.owner[6] == 1
+    answers = g.last_result["answers"]
+    assert [(a["player"], a["correct"], a.get("late", False)) for a in answers] == \
+        [(1, True, False), (0, True, True)]
+
+
+def test_siege_late_answer_goes_to_its_own_tower_question():
+    g = full_board()
+    g.owner[2] = 0
+    t = start_attack(g, 0, 3, 0)
+    q1 = g.question_no
+    g.answer(0, RIGHT, t + 1, q1)                 # tower 1 down; question stays open
+    assert g.reveal and g.question_no == q1
+    assert g.answer(1, RIGHT, t + 1.5, q1) == "late"   # defender was right, but slower
+    assert g.last_result["answers"][-1]["late"]
+    assert g.reveal is None                        # both answered: next tower right away
+    assert g.question_no != q1
+    assert g.attack["tower_q"] == 2 and g.attack["locked_out"] == set()
+    assert g.answer(1, RIGHT, t + 2, q1) is None   # old question number is ignored
+
+
+def test_results_are_numbered():
+    g = full_board()
+    g.tick(SELECT_SECONDS)
+    first = g.last_result["no"]
+    g.tick(2 * SELECT_SECONDS)
+    assert g.last_result["no"] == first + 1

@@ -14,7 +14,7 @@ falls, the attacker takes all of the defender's land and the defender is out.
 Pure game logic with no pygame and no sockets; `now` is passed in.
 """
 from game.board import NUM_REGIONS, frontier
-from game.questions import public_view
+from game.questions import REVEAL_SECONDS, Reveal, public_view
 
 SELECT_SECONDS = 10
 QUESTION_SECONDS = 10
@@ -41,6 +41,10 @@ class ConquestPhase:
         self.attacker = None       # war: whose turn it is
         self.attack = None         # war: {"region", "defender", "base", "tower_q", "locked_out"}
         self.last_result = None
+        self.results = 0           # numbers results so clients notice new ones
+        self.answers = []          # [{"player", "correct", "elapsed"}] for the open question
+        self.reveal = None         # a won duel question still open for the others
+        self._pending_follow = None  # what happens after the reveal
         self.winner = None
         self._next_round(now)
 
@@ -71,13 +75,30 @@ class ConquestPhase:
         self.selections[player] = region
         return True
 
-    def answer(self, player, choice, now):
-        """Returns "correct", "wrong", or None if the answer was not accepted."""
-        correct = choice == self.question["answer"] if self.question else False
+    def answer(self, player, choice, now, question_no=None):
+        """Returns "correct", "wrong", "late" (answered after the other player
+        had already won, for display only), or None if not accepted.
+        `question_no` is the question the player saw; an answer meant for an
+        earlier question is never applied to the current one."""
+        if self.reveal:
+            if now >= self.deadline:
+                self._end_reveal(now)
+                return None
+            if not self.reveal.answer(player, choice, question_no, now):
+                return None
+            if self.reveal.done:
+                self._end_reveal(now)
+            return "late"
+        if self.phase not in ("grab_question", "war_duel") or (
+                question_no is not None and question_no != self.question_no):
+            return None
+        correct = choice == self.question["answer"]
+        record = {"player": player, "correct": correct, "elapsed": round(now - self.asked_at, 2)}
         if self.phase == "grab_question":
             if player not in self.answering or player in self.answered:
                 return None
             self.answered[player] = correct
+            self.answers.append(record)
             if self.answered.keys() >= self.answering:
                 self._finish_grab(now)
             return "correct" if correct else "wrong"
@@ -86,6 +107,7 @@ class ConquestPhase:
             fighters = (self.attacker, a["defender"])
             if player not in fighters or player in a["locked_out"]:
                 return None
+            self.answers.append(record)
             if correct:
                 self._duel_won(player, now)
                 return "correct"
@@ -99,6 +121,9 @@ class ConquestPhase:
         """Handle expired timers. Returns True if the state changed."""
         if now < self.deadline:
             return False
+        if self.reveal:
+            self._end_reveal(now)
+            return True
         if self.phase == "grab_select":
             if self.selections:
                 self._ask(now)
@@ -114,7 +139,7 @@ class ConquestPhase:
         if self.phase == "war_select":
             region = self.selections.get(self.attacker)
             if region is None:
-                self.last_result = {"kind": "skip", "attacker": self.attacker}
+                self._result({"kind": "skip", "attacker": self.attacker})
                 self._next_turn(now)
             else:
                 defender = self.owner[region]
@@ -140,6 +165,12 @@ class ConquestPhase:
         self.selections.pop(player, None)
         self.answering.discard(player)
         self.answered.pop(player, None)
+        if self.reveal:
+            self.reveal = None           # skip the pause
+            fighter = player in (self.attacker, self.attack["defender"])
+            if not fighter and len(self.players) > 1:
+                self._follow(self._pending_follow, now)
+                return
         if len(self.players) <= 1:
             self._game_over(self.players[0] if self.players else None)
         elif self.phase == "grab_question" and self.answered.keys() >= self.answering:
@@ -153,6 +184,8 @@ class ConquestPhase:
 
     def bot_task(self, player):
         """What `player` could do now: (kind, token, options) or None."""
+        if self.reveal:
+            return None
         if self.phase in ("grab_select", "war_select") and player not in self.selections:
             options = self.selectable(player)
             return ("select", self.deadline, options) if options else None
@@ -195,15 +228,24 @@ class ConquestPhase:
             a = self.attack
             state["attack"] = {"region": a["region"], "defender": a["defender"],
                                "base": a["base"], "tower_q": a["tower_q"],
-                               "locked_out": sorted(a["locked_out"])}
+                               "locked_out": sorted(a["locked_out"]),
+                               "reveal": self.reveal is not None,
+                               "waiting": sorted(self.reveal.waiting) if self.reveal else []}
         return state
 
     # ---- internals -----------------------------------------------------
+
+    def _result(self, result):
+        self.results += 1
+        result["no"] = self.results
+        self.last_result = result
+        return result
 
     def _ask(self, now):
         self.question = self.next_question()
         self.question_no += 1
         self.asked_at = now
+        self.answers = []
         self.deadline = now + QUESTION_SECONDS
 
     def _next_round(self, now, after=None):
@@ -245,8 +287,8 @@ class ConquestPhase:
                 self.owner[region] = player
                 won[player] = region
         missed = sorted(p for p in self.answering if p not in won)
-        self.last_result = {"kind": "grab", "won": {str(p): r for p, r in won.items()},
-                            "missed": missed}
+        self._result({"kind": "grab", "won": {str(p): r for p, r in won.items()},
+                      "missed": missed, "answers": sorted(self.answers, key=lambda a: a["elapsed"])})
         self.answering, self.answered = set(), {}
         self._next_round(now)
 
@@ -257,34 +299,49 @@ class ConquestPhase:
         attacker_won = winner == attacker
         result = {"kind": "attack", "attacker": attacker, "defender": defender,
                   "region": region, "base": a["base"], "attacker_won": attacker_won,
-                  "elapsed": round(now - self.asked_at, 2) if winner is not None else None}
+                  "elapsed": round(now - self.asked_at, 2) if winner is not None else None,
+                  "answers": list(self.answers)}
+        follow = "turn"
         if not a["base"]:
             if attacker_won:
                 self.owner[region] = attacker
-            self.last_result = result
-            self._next_turn(now)
+        else:
+            if attacker_won:
+                self.towers[defender] -= 1
+            result["towers_left"] = self.towers[defender]
+            result["tower_q"] = a["tower_q"]
+            if self.towers[defender] <= 0:
+                for r, p in list(self.owner.items()):
+                    if p == defender:
+                        self.owner[r] = attacker
+                self.players.remove(defender)
+                self.bases.pop(defender)
+                self.towers.pop(defender)
+                result["base_fell"] = True
+            elif a["tower_q"] < TOWERS:
+                follow = "next_tower"
+        self._result(result)
+        answered = {x["player"] for x in self.answers}
+        waiting = [p for p in (attacker, defender) if p not in answered]
+        if winner is not None and waiting:
+            # Keep the question open so the other fighter can still answer.
+            self.reveal = Reveal(self.question, self.question_no, self.asked_at, waiting, result)
+            self._pending_follow = follow
+            self.deadline = now + REVEAL_SECONDS
             return
-        if attacker_won:
-            self.towers[defender] -= 1
-        result["towers_left"] = self.towers[defender]
-        result["tower_q"] = a["tower_q"]
-        if self.towers[defender] <= 0:
-            for r, p in list(self.owner.items()):
-                if p == defender:
-                    self.owner[r] = attacker
-            self.players.remove(defender)
-            self.bases.pop(defender)
-            self.towers.pop(defender)
-            result["base_fell"] = True
-            self.last_result = result
-            self._next_turn(now)
-        elif a["tower_q"] < TOWERS:
-            a["tower_q"] += 1
-            a["locked_out"] = set()
-            self.last_result = result
+        self._follow(follow, now)
+
+    def _end_reveal(self, now):
+        self.reveal = None
+        self._follow(self._pending_follow, now)
+
+    def _follow(self, follow, now):
+        """Continue after a war question: the next siege question or the next turn."""
+        if follow == "next_tower":
+            self.attack["tower_q"] += 1
+            self.attack["locked_out"] = set()
             self._ask(now)
         else:
-            self.last_result = result
             self._next_turn(now)
 
     def _check_winner(self):

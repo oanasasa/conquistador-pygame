@@ -6,7 +6,7 @@ Pure game logic with no pygame and no sockets. Times are passed in as `now`
 import random
 
 from game.board import NUM_REGIONS
-from game.questions import public_view
+from game.questions import REVEAL_SECONDS, Reveal, public_view
 
 PICK_SECONDS = 15
 DUEL_SECONDS = 10
@@ -20,12 +20,14 @@ class Duel:
         self.question_no = 0
         self.asked_at = 0.0
         self.locked_out = set()
+        self.answers = []          # [{"player", "correct", "elapsed"}] for this question
 
     def ask(self, question, number, now):
         self.question = question
         self.question_no = number
         self.asked_at = now
         self.locked_out = set()
+        self.answers = []
 
 
 class OpeningPhase:
@@ -43,6 +45,8 @@ class OpeningPhase:
         self.duel = None           # the Duel being played
         self.last_result = None    # {"region", "winner", "elapsed"} of the last duel
         self.questions_asked = 0   # numbers questions across all duels
+        self.results = 0           # numbers results so clients notice new ones
+        self.reveal = None         # a won duel question still open for the others
         self.phase = None
         self.deadline = 0.0
         self._start_pick_round(set(self.players), now)
@@ -72,15 +76,32 @@ class OpeningPhase:
         self.picks[player] = region
         return True
 
-    def answer_duel(self, player, choice, now):
+    def answer_duel(self, player, choice, now, question_no=None):
         """Judge an answer in arrival order: the first correct one wins.
 
-        Returns "correct", "wrong", or None if the answer was not accepted.
+        `question_no` is the question the player saw; an answer meant for an
+        earlier question is never applied to the current one.
+        Returns "correct", "wrong", "late" (answered after someone else had
+        already won, for display only), or None if the answer was not accepted.
         """
+        if self.reveal:
+            if now >= self.deadline:
+                self._end_reveal(now)
+                return None
+            if not self.reveal.answer(player, choice, question_no, now):
+                return None
+            if self.reveal.done:
+                self._end_reveal(now)
+            return "late"
         duel = self.duel
-        if self.phase != "duel" or player not in duel.players or player in duel.locked_out:
+        if self.phase != "duel" or (question_no is not None and question_no != duel.question_no):
             return None
-        if choice == duel.question["answer"]:
+        if player not in duel.players or player in duel.locked_out:
+            return None
+        correct = choice == duel.question["answer"]
+        duel.answers.append({"player": player, "correct": correct,
+                             "elapsed": round(now - duel.asked_at, 2)})
+        if correct:
             self._finish_duel(player, now, elapsed=now - duel.asked_at)
             return "correct"
         duel.locked_out.add(player)
@@ -92,6 +113,11 @@ class OpeningPhase:
         """Handle expired timers. Returns True if the state changed.
 
         A pick round ends early once every picker has chosen a region."""
+        if self.reveal:
+            if now >= self.deadline:
+                self._end_reveal(now)
+                return True
+            return False
         if self.phase == "pick" and (now >= self.deadline or self.picks.keys() >= self.pickers):
             self._end_pick_round(now)
             return True
@@ -105,6 +131,10 @@ class OpeningPhase:
         if player not in self.players:
             return
         self.players.remove(player)
+        if self.reveal:
+            self.reveal.waiting.discard(player)
+            if self.reveal.done:
+                self._end_reveal(now)
         self.owner = {r: p for r, p in self.owner.items() if p != player}
         self.picks.pop(player, None)
         for group in (self.pickers, self.repickers, self.missed):
@@ -112,7 +142,7 @@ class OpeningPhase:
         for d in self.duels:
             if player in d.players:
                 d.players.remove(player)
-        if self.duel and player in self.duel.players:
+        if self.duel and player in self.duel.players and not self.reveal:
             self.duel.players.remove(player)
             self.duel.locked_out.discard(player)
         self._settle_uncontested(now)
@@ -124,14 +154,14 @@ class OpeningPhase:
     def select(self, player, region, now=None):
         return self.submit_pick(player, region)
 
-    def answer(self, player, choice, now):
-        return self.answer_duel(player, choice, now)
+    def answer(self, player, choice, now, question_no=None):
+        return self.answer_duel(player, choice, now, question_no)
 
     def bot_task(self, player):
         """What `player` could do now: (kind, token, options) or None."""
         if self.phase == "pick" and player in self.pickers:
             return ("select", self.deadline, self.free_regions())
-        if (self.phase == "duel" and player in self.duel.players
+        if (self.phase == "duel" and not self.reveal and player in self.duel.players
                 and player not in self.duel.locked_out):
             return ("answer", self.deadline, self.duel.question)
         return None
@@ -158,6 +188,8 @@ class OpeningPhase:
                 "question": public_view(d.question),
                 "question_no": d.question_no,
                 "locked_out": sorted(d.locked_out),
+                "reveal": self.reveal is not None,
+                "waiting": sorted(self.reveal.waiting) if self.reveal else [],
             }
         return state
 
@@ -208,8 +240,22 @@ class OpeningPhase:
         duel = self.duel
         self.owner[duel.region] = winner
         self.repickers.update(p for p in duel.players if p != winner)
-        self.last_result = {"region": duel.region, "winner": winner,
-                            "elapsed": round(elapsed, 2) if elapsed is not None else None}
+        self.results += 1
+        self.last_result = {"no": self.results, "region": duel.region, "winner": winner,
+                            "elapsed": round(elapsed, 2) if elapsed is not None else None,
+                            "answers": list(duel.answers)}
+        answered = {a["player"] for a in duel.answers}
+        waiting = [p for p in duel.players if p not in answered]
+        if elapsed is not None and waiting:
+            self.reveal = Reveal(duel.question, duel.question_no, duel.asked_at,
+                                 waiting, self.last_result)
+            self.deadline = now + REVEAL_SECONDS
+            return
+        self.duel = None
+        self._advance(now)
+
+    def _end_reveal(self, now):
+        self.reveal = None
         self.duel = None
         self._advance(now)
 

@@ -3,8 +3,9 @@ player actions through it; they never judge answers themselves."""
 import pygame
 
 from net import protocol
-from ui.widgets import (BG, GRAY, HEIGHT, MARGIN, PLAYER_COLORS, WHITE, WIDTH,
-                        Button, TextInput, draw_board, region_at, text)
+from ui.widgets import (BG, BOARD_TOP, GRAY, HEIGHT, MARGIN, PLAYER_COLORS, WHITE, WIDTH,
+                        Button, TextInput, dim, draw_board, draw_card, draw_mark,
+                        ease_out_back, region_at, text, timer_color, wrap_text)
 
 ANSWER_KEYS = [pygame.K_1, pygame.K_2, pygame.K_3]
 
@@ -157,6 +158,7 @@ class Room(Scene):
 
 YELLOW = (255, 210, 60)
 RED_TEXT = (255, 120, 120)
+GREEN_TEXT = (110, 220, 140)
 
 
 def result_line(app):
@@ -242,12 +244,20 @@ class MapPick(Scene):
 
 
 class QuestionScene(Scene):
-    """Shared layout for every question: text, three answer buttons (or keys
-    1-3), a status line and the board. The server judges the answer."""
+    """Every question pops up as a card over the dimmed map, so attention
+    goes only there. Answer with keys 1-3 or by clicking. The server judges."""
+
+    CARD_W = 680
+    POP_MS = 280
+    joiner = "vs"        # between player names in the header: rivals or not
 
     def __init__(self, app):
         super().__init__(app)
-        self.buttons = [Button((MARGIN + i * 290, 65, 270, 40), "") for i in range(3)]
+        self.token = None
+        self.shown_at = 0
+        self.total = 10.0
+        self.card = pygame.Rect(0, 0, 0, 0)
+        self.choice_rects = []      # screen coordinates, for clicks
 
     # subclasses provide these
     def question(self):
@@ -259,35 +269,140 @@ class QuestionScene(Scene):
     def status(self):
         raise NotImplementedError
 
+    def title(self):
+        raise NotImplementedError
+
+    def players(self):
+        """Players taking part in this question, shown on the card."""
+        raise NotImplementedError
+
     def draw_map(self, screen):
         raise NotImplementedError
 
     def can_answer(self):
         return self.may_answer() and self.app.answered_q != self.app.question_token()
 
+    def reveal_status(self, info):
+        """Status while a won question stays open for the others."""
+        res = self.app.state.get("last_result") or {}
+        first = next((a["player"] for a in res.get("answers", [])
+                      if a["correct"] and not a.get("late")), None)
+        if first is None:
+            return None
+        if first == self.app.you:
+            return "You were first!", GREEN_TEXT
+        name = self.app.player_name(first)
+        if self.app.you in info["waiting"] and self.can_answer():
+            return f"{name} answered first! Answer anyway to see if you were right.", YELLOW
+        return f"{name} answered first!", YELLOW
+
     def handle(self, event):
         if not self.can_answer():
             return
-        choices = self.question()["choices"]
-        for i, b in enumerate(self.buttons[:len(choices)]):
+        for i, rect in enumerate(self.choice_rects):
             pressed = event.type == pygame.KEYDOWN and event.key == ANSWER_KEYS[i]
-            if pressed or b.clicked(event):
+            clicked = (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1
+                       and rect.collidepoint(event.pos))
+            if pressed or clicked:
                 self.app.answer(i)
                 return
 
     def draw(self, screen):
+        token = self.app.question_token()
+        if token != self.token:                     # a new question: pop it in
+            self.token = token
+            self.shown_at = pygame.time.get_ticks()
+            self.total = max(self.app.remaining(), 1.0)
+        progress = min(1.0, (pygame.time.get_ticks() - self.shown_at) / self.POP_MS)
+
         screen.fill(BG)
-        q = self.question()
-        text(screen, q["q"], (MARGIN, 15), size=38)
-        active = self.can_answer()
-        for i, (b, choice) in enumerate(zip(self.buttons, q["choices"])):
-            b.label = f"{i + 1}) {choice}"
-            b.enabled = active
-            b.draw(screen)
-        text(screen, f"{self.app.remaining():0.0f}s", (WIDTH - MARGIN - 50, 15), WHITE, size=40)
-        msg, color = self.status()
-        text(screen, msg, (MARGIN, 118), color, size=26)
+        text(screen, self.title(), (MARGIN, 20), size=36)
         self.draw_map(screen)
+        dim(screen, 175 * min(1.0, progress * 1.5))
+
+        card = self.render_card()
+        scale = 0.8 + 0.2 * ease_out_back(progress)
+        if scale != 1.0:
+            size = (int(card.get_width() * scale), int(card.get_height() * scale))
+            card = pygame.transform.smoothscale(card, size)
+        screen.blit(card, card.get_rect(center=self.card.center))
+
+    def render_card(self):
+        q = self.question()
+        w = self.CARD_W
+        lines = wrap_text(q["q"], 34, w - 48)
+        choices_top = 64 + len(lines) * 36 + 14
+        h = choices_top + len(q["choices"]) * 54 + 64
+        self.card = pygame.Rect(0, 0, w, h)
+        self.card.center = (WIDTH // 2, HEIGHT // 2 + 30)
+        surf = pygame.Surface((w, h), pygame.SRCALPHA)
+        accent = YELLOW
+
+        draw_card(surf, surf.get_rect(), accent)
+        pygame.draw.rect(surf, accent, (0, 0, w, 48),
+                         border_top_left_radius=14, border_top_right_radius=14)
+        text(surf, self.title_band(), (20, 14), (30, 30, 40), size=28)
+        self.draw_players(surf, w - 20, 24)
+
+        for i, line in enumerate(lines):
+            text(surf, line, (24, 62 + i * 36), WHITE, size=34)
+
+        active = self.can_answer()
+        mine = self.app.answered_choice if self.app.answered_q == self.app.question_token() else None
+        mouse = pygame.mouse.get_pos()
+        self.choice_rects = []
+        for i, choice in enumerate(q["choices"]):
+            local = pygame.Rect(24, choices_top + i * 54, w - 48, 44)
+            screen_rect = local.move(self.card.topleft)
+            self.choice_rects.append(screen_rect)
+            if i == mine:
+                fill = (95, 115, 180)
+            elif active:
+                fill = (80, 100, 155) if screen_rect.collidepoint(mouse) else (64, 80, 125)
+            else:
+                fill = (58, 60, 78)
+            pygame.draw.rect(surf, fill, local, border_radius=8)
+            if i == mine:
+                pygame.draw.rect(surf, WHITE, local, 3, border_radius=8)
+            badge = pygame.Rect(local.x + 8, local.y + 7, 30, 30)
+            pygame.draw.rect(surf, (225, 225, 235) if active or i == mine else GRAY, badge,
+                             border_radius=6)
+            text(surf, str(i + 1), badge.center, (30, 30, 40), size=26, center=True)
+            text(surf, choice, (local.x + 52, local.y + 11), WHITE if active or i == mine else GRAY,
+                 size=30)
+
+        bar_y = choices_top + len(q["choices"]) * 54 + 4
+        bar = pygame.Rect(24, bar_y, w - 48, 10)
+        fraction = max(0.0, min(1.0, self.app.remaining() / self.total))
+        pygame.draw.rect(surf, (30, 30, 40), bar, border_radius=5)
+        pygame.draw.rect(surf, timer_color(fraction), (bar.x, bar.y, int(bar.w * fraction), bar.h),
+                         border_radius=5)
+        text(surf, f"{self.app.remaining():0.0f}s", (bar.right - 30, bar_y + 18), GRAY, size=24)
+
+        msg, color = self.status()
+        text(surf, msg, (24, bar_y + 18), color, size=24)
+        return surf
+
+    def title_band(self):
+        return self.title().upper()
+
+    def draw_players(self, surf, right, cy):
+        """Colored name chips, right-aligned in the header band."""
+        x = right
+        for i, p in enumerate(reversed(self.players())):
+            name = self.app.player_name(p)
+            r = text(surf, name, (0, -100), size=26)          # measure only
+            x -= r.width
+            text(surf, name, (x, cy - r.height // 2), (30, 30, 40), size=26)
+            x -= 16
+            pygame.draw.circle(surf, PLAYER_COLORS[p], (x + 6, cy), 8)
+            pygame.draw.circle(surf, (30, 30, 40), (x + 6, cy), 8, 2)
+            x -= 14
+            if i < len(self.players()) - 1:
+                vs = text(surf, self.joiner, (0, -100), size=22)
+                x -= vs.width + 4
+                text(surf, self.joiner, (x, cy - vs.height // 2), (30, 30, 40), size=22)
+                x -= 12
 
 
 class Duel(QuestionScene):
@@ -297,22 +412,30 @@ class Duel(QuestionScene):
     def question(self):
         return self.app.state["duel"]["question"]
 
+    def title(self):
+        return f"Bonus question for region {self.app.state['duel']['region'] + 1}"
+
+    def players(self):
+        return self.app.state["duel"]["players"]
+
     def may_answer(self):
         duel = self.app.state["duel"]
+        if duel["reveal"]:
+            return self.app.you in duel["waiting"]
         return self.app.you in duel["players"] and self.app.you not in duel["locked_out"]
 
     def status(self):
         duel = self.app.state["duel"]
         me = self.app.you
-        region = duel["region"] + 1
+        if duel["reveal"]:
+            return self.reveal_status(duel) or ("", GRAY)
         if me in duel["players"]:
             if me in duel["locked_out"]:
                 return "Wrong! You're locked out of this question.", RED_TEXT
             if not self.can_answer():
                 return "Answer sent...", GRAY
-            return f"Bonus question for region {region}: fastest correct answer wins! (1-3)", YELLOW
-        fighters = " vs ".join(self.app.player_name(p) for p in duel["players"])
-        return f"{fighters} are fighting for region {region}. You're watching.", GRAY
+            return "Fastest correct answer wins!", YELLOW
+        return "You're watching this fight.", GRAY
 
     def draw_map(self, screen):
         st = self.app.state
@@ -374,8 +497,17 @@ class GrabSelect(Scene):
 class GrabQuestion(QuestionScene):
     """Everyone who selected a region answers; each correct player takes it."""
 
+    joiner = "&"
+
     def question(self):
         return self.app.state["question"]
+
+    def title(self):
+        mine = self.app.state["selections"].get(str(self.app.you))
+        return "Land grab" + (f" for region {mine + 1}" if mine is not None else "")
+
+    def players(self):
+        return self.app.state["answering"]
 
     def may_answer(self):
         st = self.app.state
@@ -387,12 +519,11 @@ class GrabQuestion(QuestionScene):
         waiting = [self.app.player_name(p) for p in st["answering"] if p not in st["answered"]]
         if me in st["answering"]:
             if self.can_answer():
-                region = st["selections"][str(me)] + 1
-                return f"Answer correctly to take region {region}! (1-3)", YELLOW
+                return "Answer correctly to take your region!", YELLOW
             if waiting:
                 return f"Answer sent. Waiting for {', '.join(waiting)}...", GRAY
             return "Answer sent...", GRAY
-        return "You didn't choose a region this round. You're watching.", GRAY
+        return "You didn't choose a region this round. Watching.", GRAY
 
     def draw_map(self, screen):
         st = self.app.state
@@ -445,27 +576,38 @@ class WarDuel(QuestionScene):
         st = self.app.state
         return st["attacker"], st["attack"]["defender"]
 
-    def may_answer(self):
-        me = self.app.you
-        return me in self.fighters() and me not in self.app.state["attack"]["locked_out"]
+    def players(self):
+        return list(self.fighters())
 
-    def status(self):
+    def title(self):
         st = self.app.state
         a = st["attack"]
-        me = self.app.you
-        att, dfn = (self.app.player_name(p) for p in self.fighters())
         if a["base"]:
             towers = st["towers"].get(str(a["defender"]), 0)
-            what = f"{att} attacks {dfn}'s base: question {a['tower_q']} of 3, towers left {towers}"
-        else:
-            what = f"{att} attacks {dfn}'s region {a['region'] + 1}"
+            return f"Siege: tower {a['tower_q']} of 3 ({towers} standing)"
+        return f"Attack on region {a['region'] + 1}"
+
+    def may_answer(self):
+        a = self.app.state["attack"]
+        if a["reveal"]:
+            return self.app.you in a["waiting"]
+        return self.app.you in self.fighters() and self.app.you not in a["locked_out"]
+
+    def status(self):
+        a = self.app.state["attack"]
+        me = self.app.you
+        if a["reveal"]:
+            return self.reveal_status(a) or ("", GRAY)
+        att, dfn = (self.app.player_name(p) for p in self.fighters())
         if me in self.fighters():
             if me in a["locked_out"]:
                 return "Wrong! You're locked out of this question.", RED_TEXT
             if not self.can_answer():
                 return "Answer sent...", GRAY
-            return what + ". Fastest correct answer wins! (1-3)", YELLOW
-        return what + ". You're watching.", GRAY
+            if me == self.fighters()[0]:
+                return "You attack! Fastest correct answer wins.", YELLOW
+            return f"{att} attacks you! Fastest correct answer wins.", YELLOW
+        return f"{att} attacks {dfn}. You're watching.", GRAY
 
     def draw_map(self, screen):
         conquest_board(screen, self.app, contested=self.app.state["attack"]["region"])
@@ -492,3 +634,110 @@ class GameOver(Scene):
         draw_result(screen, self.app, y=70)
         self.leave.draw(screen)
         conquest_board(screen, self.app)
+
+
+# ---- result popup ------------------------------------------------------------
+
+def answer_rows(res):
+    """[(player, correct, detail)] for each answer, in the order they arrived.
+    Shows who was first and how much slower the other correct answers were."""
+    answers = res.get("answers") or []
+    on_time = [a["elapsed"] for a in answers if a["correct"] and not a.get("late")]
+    fastest = min(on_time) if on_time else None
+    race = res.get("kind") != "grab"         # in a land grab every correct answer wins
+    rows = []
+    for a in answers:
+        if not a["correct"]:
+            detail = f"wrong ({a['elapsed']:.1f}s)"
+        elif a.get("late") and fastest is not None:
+            detail = f"correct, but {a['elapsed'] - fastest:.1f}s slower"
+        elif race and a["elapsed"] == fastest:
+            detail = f"correct in {a['elapsed']:.1f}s - FIRST!"
+        else:
+            detail = f"correct in {a['elapsed']:.1f}s"
+        rows.append((a["player"], a["correct"], detail))
+    return rows
+
+
+class ResultPopup:
+    """Pops up after every question or turn with what happened. Over a
+    question it shrinks to a banner at the top so it doesn't cover the card."""
+
+    SHOW_MS = 3500
+    POP_MS = 220
+
+    def __init__(self, app):
+        self.app = app
+        self.key = None
+        self.shown_at = 0
+        self.dismissed = False
+
+    def result(self):
+        st = self.app.state
+        return st.get("last_result") if st else None
+
+    def update(self):
+        res = self.result()
+        key = (self.app.state["stage"], res.get("no")) if res else None
+        if key != self.key:
+            self.key = key
+            self.shown_at = pygame.time.get_ticks()
+            self.dismissed = False
+
+    def visible(self):
+        return (self.key is not None and not self.dismissed
+                and pygame.time.get_ticks() - self.shown_at < self.SHOW_MS)
+
+    def handle(self, event, compact):
+        """A click dismisses the big popup. Returns True if the click was used."""
+        if (self.visible() and not compact and event.type == pygame.MOUSEBUTTONDOWN
+                and event.button == 1):
+            self.dismissed = True
+            return True
+        return False
+
+    def draw(self, screen, compact):
+        if not self.visible():
+            return
+        res = self.result()
+        title = result_line(self.app) or ""
+        rows = answer_rows(res)
+        age = pygame.time.get_ticks() - self.shown_at
+        progress = min(1.0, age / self.POP_MS)
+        if compact:
+            self.draw_banner(screen, title, rows, progress)
+        else:
+            self.draw_card(screen, title, rows, progress, age)
+
+    def draw_banner(self, screen, title, rows, progress):
+        parts = [title] + [f"{self.app.player_name(p)}: {d}" for p, _, d in rows]
+        line = "   ".join(parts)
+        rect = pygame.Rect(MARGIN, 0, WIDTH - 2 * MARGIN, 40)
+        rect.y = int(-40 + 48 * ease_out_back(progress))
+        draw_card(screen, rect, YELLOW, radius=10)
+        text(screen, wrap_text(line, 24, rect.w - 24)[0], (rect.x + 12, rect.y + 12), WHITE, size=24)
+
+    def draw_card(self, screen, title, rows, progress, age):
+        w = 560
+        title_lines = wrap_text(title, 30, w - 40)
+        h = 30 + len(title_lines) * 30 + (12 + len(rows) * 36 if rows else 0) + 30
+        surf = pygame.Surface((w, h), pygame.SRCALPHA)
+        draw_card(surf, surf.get_rect(), YELLOW)
+        y = 22
+        for line in title_lines:
+            text(surf, line, (20, y), YELLOW, size=30)
+            y += 30
+        y += 12
+        for player, correct, detail in rows:
+            draw_mark(surf, (32, y + 12), correct)
+            name = self.app.player_name(player)
+            r = text(surf, name, (52, y + 2), PLAYER_COLORS[player], size=28)
+            text(surf, detail, (r.right + 12, y + 4), WHITE, size=26)
+            y += 36
+        text(surf, "click to close", (w - 120, h - 24), GRAY, size=20)
+        fade = max(0.0, min(1.0, (self.SHOW_MS - age) / 400))   # fade out at the end
+        surf.set_alpha(int(255 * fade))
+        scale = 0.8 + 0.2 * ease_out_back(progress)
+        if scale != 1.0:
+            surf = pygame.transform.smoothscale(surf, (int(w * scale), int(h * scale)))
+        screen.blit(surf, surf.get_rect(center=(WIDTH // 2, BOARD_TOP + 210)))

@@ -1,6 +1,6 @@
 import random
 
-from game.board import frontier, neighbors
+from game.board import default_board, grid_board
 from game.bot import Bot
 from game.conquest import QUESTION_SECONDS, SELECT_SECONDS, TOWERS, ConquestPhase
 from game.questions import REVEAL_SECONDS
@@ -15,14 +15,32 @@ RIGHT, WRONG = 0, 1
 #   8  9 10 11
 
 
+GRID = grid_board(4, 3)
+
+
 def make(owner, now=0.0):
-    return ConquestPhase(sorted(set(owner.values())), owner, lambda: FAKE_Q, now)
+    return ConquestPhase(sorted(set(owner.values())), owner, lambda: FAKE_Q, now, board=GRID)
 
 
 def test_neighbors_and_frontier():
-    assert sorted(neighbors(0)) == [1, 4]
-    assert sorted(neighbors(5)) == [1, 4, 6, 9]
-    assert frontier({0: 0, 1: 0, 11: 1}, 0) == [2, 4, 5]
+    assert GRID.neighbors(0) == [1, 4]
+    assert GRID.neighbors(5) == [1, 4, 6, 9]
+    assert GRID.frontier({0: 0, 1: 0, 11: 1}, 0) == [2, 4, 5]
+
+
+def test_romania_map_borders_are_symmetric_and_connected():
+    board = default_board()
+    assert board.num_regions == 20
+    for r in range(board.num_regions):
+        for n in board.neighbors(r):
+            assert r in board.neighbors(n)
+    seen, todo = {0}, [0]
+    while todo:
+        for n in board.neighbors(todo.pop()):
+            if n not in seen:
+                seen.add(n)
+                todo.append(n)
+    assert len(seen) == board.num_regions
 
 
 # ---- land grab -------------------------------------------------------------
@@ -100,7 +118,7 @@ def test_war_starts_when_no_free_land():
 def full_board():
     """Player 0: left half (base 0). Player 1: right half (base 3)."""
     owner = {r: (0 if r % 4 < 2 else 1) for r in range(12)}
-    g = ConquestPhase([0, 1], owner, lambda: FAKE_Q, 0.0)
+    g = ConquestPhase([0, 1], owner, lambda: FAKE_Q, 0.0, board=GRID)
     g.bases = {0: 0, 1: 3}
     return g
 
@@ -205,7 +223,7 @@ def test_towers_stay_destroyed_between_attacks():
 
 def test_base_falls_eliminates_only_that_player_with_three():
     owner = {0: 0, 1: 0, 2: 1, 3: 1, 4: 0, 5: 0, 6: 1, 7: 1, 8: 2, 9: 2, 10: 2, 11: 2}
-    g = ConquestPhase([0, 1, 2], owner, lambda: FAKE_Q, 0.0)
+    g = ConquestPhase([0, 1, 2], owner, lambda: FAKE_Q, 0.0, board=GRID)
     g.bases = {0: 0, 1: 3, 2: 11}
     g.towers[2] = 1
     g.attacker = 0                       # make player 1 the next attacker
@@ -241,7 +259,7 @@ def test_disconnect_frees_land_then_grab_resumes():
 
 def test_bots_play_a_full_game_to_the_end():
     owner = {0: 0, 3: 1, 9: 2}
-    g = ConquestPhase([0, 1, 2], owner, lambda: FAKE_Q, 0.0)
+    g = ConquestPhase([0, 1, 2], owner, lambda: FAKE_Q, 0.0, board=GRID)
     bots = [Bot(p, random.Random(p), accuracy=0.5) for p in (0, 1, 2)]
     t = 0.0
     while not g.is_done() and t < 5000:

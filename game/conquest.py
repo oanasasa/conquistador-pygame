@@ -13,7 +13,7 @@ falls, the attacker takes all of the defender's land and the defender is out.
 
 Pure game logic with no pygame and no sockets; `now` is passed in.
 """
-from game.board import NUM_REGIONS, frontier
+from game.board import default_board
 from game.questions import REVEAL_SECONDS, Reveal, public_view
 
 SELECT_SECONDS = 10
@@ -24,7 +24,8 @@ TOWERS = 3
 class ConquestPhase:
     picks_visible = True
 
-    def __init__(self, players, owner, next_question, now):
+    def __init__(self, players, owner, next_question, now, board=None):
+        self.board = board or default_board()
         self.players = sorted(players)                       # alive, in turn order
         self.owner = dict(owner)                             # region -> player
         self.bases = {p: r for r, p in owner.items()}        # player -> base region
@@ -51,16 +52,16 @@ class ConquestPhase:
     # ---- queries -------------------------------------------------------
 
     def free_regions(self):
-        return [r for r in range(NUM_REGIONS) if r not in self.owner]
+        return [r for r in range(self.board.num_regions) if r not in self.owner]
 
     def selectable(self, player):
         """Regions `player` may select right now."""
         if self.phase == "grab_select" and player in self.players:
             taken = {r for p, r in self.selections.items() if p != player}
-            return [r for r in frontier(self.owner, player)
+            return [r for r in self.board.frontier(self.owner, player)
                     if r not in self.owner and r not in taken]
         if self.phase == "war_select" and player == self.attacker:
-            return [r for r in frontier(self.owner, player) if r in self.owner]
+            return [r for r in self.board.frontier(self.owner, player) if r in self.owner]
         return []
 
     def is_done(self):

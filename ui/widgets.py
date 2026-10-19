@@ -1,7 +1,5 @@
 import pygame
 
-from game.board import COLS, ROWS
-
 WIDTH, HEIGHT = 900, 600
 MARGIN = 20
 BOARD_TOP = 150
@@ -77,71 +75,35 @@ class TextInput:
         text(screen, shown + caret, (self.rect.x + 10, self.rect.y + 10), color)
 
 
-# ---- the region board ---------------------------------------------------
+# ---- the map ----------------------------------------------------------------
 
-GRID_COLS, GRID_ROWS = COLS, ROWS
-CELL_W = (WIDTH - MARGIN * 2) // GRID_COLS
-CELL_H = (HEIGHT - BOARD_TOP - MARGIN) // GRID_ROWS
-
-
-def region_rect(region):
-    row, col = divmod(region, GRID_COLS)
-    return pygame.Rect(MARGIN + col * CELL_W, BOARD_TOP + row * CELL_H, CELL_W - 4, CELL_H - 4)
+BOARD_AREA = pygame.Rect(MARGIN, BOARD_TOP, WIDTH - 2 * MARGIN, HEIGHT - BOARD_TOP - MARGIN)
+_map_view = None
 
 
-REGION_RECTS = [region_rect(r) for r in range(GRID_COLS * GRID_ROWS)]
+def map_view():
+    """The shared parchment map, built on first use (needs pygame initialized)."""
+    global _map_view
+    if _map_view is None:
+        from ui.mapview import MapView
+        _map_view = MapView(BOARD_AREA)
+    return _map_view
 
 
 def region_at(pos):
-    for r, rect in enumerate(REGION_RECTS):
-        if rect.collidepoint(pos):
-            return r
-    return None
+    return map_view().region_at(pos)
 
 
-def faded(color, amount=0.45):
-    """Mix a player color with the neutral gray (for locked selections)."""
-    return tuple(int(n + (c - n) * amount) for c, n in zip(color, NEUTRAL))
+def region_name(region):
+    return map_view().names[region]
 
 
-def draw_castle(screen, rect, towers, total=3):
-    """Base marker: one small tower per life, dark once destroyed."""
-    w, h, gap = 14, 24, 6
-    x0 = rect.right - total * (w + gap) - 4
-    y = rect.bottom - h - 8
-    text(screen, "BASE", (x0, y - 20), WHITE, size=20)
-    for i in range(total):
-        tower = pygame.Rect(x0 + i * (w + gap), y, w, h)
-        pygame.draw.rect(screen, WHITE if i < towers else (55, 55, 60), tower)
-        pygame.draw.rect(screen, (30, 30, 40), tower, 2)
-
-
-def draw_board(screen, owner, my_pick=None, contested=None, my_color=WHITE,
+def draw_board(screen, owner, my_pick=None, contested=None, my_color=None,
                selections=None, selectable=(), bases=None):
-    """owner: {region: player}. selections: {region: player} shown faded (locked).
-    selectable: regions the viewer may click. bases: {region: towers left}.
-    Region labels are 1-based for players."""
-    selections = selections or {}
-    bases = bases or {}
-    for r, rect in enumerate(REGION_RECTS):
-        p = owner.get(r)
-        if p is not None:
-            color = PLAYER_COLORS[p]
-        elif r in selections:
-            color = faded(PLAYER_COLORS[selections[r]])
-        else:
-            color = NEUTRAL
-        pygame.draw.rect(screen, color, rect)
-        text(screen, str(r + 1), (rect.x + 8, rect.y + 6), (230, 230, 230), size=26)
-        if r in bases:
-            draw_castle(screen, rect, bases[r])
-        if r in selectable:
-            pygame.draw.rect(screen, (200, 200, 210), rect, 2)
-        if r == my_pick:
-            pygame.draw.rect(screen, my_color, rect, 5)
-        if r == contested:
-            t = pygame.time.get_ticks() // 300 % 2
-            pygame.draw.rect(screen, (255, 210, 60) if t else WHITE, rect, 5)
+    """owner: {region: player}. selections: {region: player} locked selections.
+    selectable: regions the viewer may click. bases: {region: towers left}."""
+    map_view().draw(screen, owner, my_pick=my_pick, contested=contested, my_color=my_color,
+                    selections=selections, selectable=selectable, bases=bases)
 
 
 # ---- popups -------------------------------------------------------------

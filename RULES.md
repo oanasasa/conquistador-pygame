@@ -28,7 +28,10 @@ castles. The game ends when one player controls every region.
 
 ## Setup
 
-- The map has 12 regions, all unclaimed (neutral gray) at the start.
+- The map is Romania, drawn as an old parchment map. Its 42 counties are
+  grouped into 20 regions (lands) such as Maramureș, Banat, Oltenia, Bucovina
+  and Dobrogea. County borders are drawn faintly; only lands are played.
+- All lands start unclaimed (plain parchment).
 - Questions are drawn at random from `data/questions.json`.
 
 ## Opening: choosing starting regions
@@ -55,7 +58,8 @@ castles. The game ends when one player controls every region.
 7. When every player owns one starting region, that region becomes their
    **base**: a castle with 3 towers. The land grab begins.
 
-Regions are neighbors when they share an edge (no diagonals).
+Two lands are neighbors when they share a border. Lands that only touch at a
+single point are not neighbors.
 
 ## Land grab
 

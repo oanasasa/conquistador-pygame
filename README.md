@@ -34,6 +34,14 @@ macOS may ask to allow incoming connections for Python; allow it so others can j
 - `1`-`3`: answer a question
 - `Esc`: quit
 
+## Map data
+
+The map in `data/map.json` is built from [Natural Earth](https://www.naturalearthdata.com/)
+1:10m admin-1 boundaries and rivers (public domain) by `tools/build_map.py`.
+The game reads only that file and makes no network calls. To change how
+counties are grouped into lands, edit `LANDS` in the script and run it again
+(the script's docstring says which files to download).
+
 ## Tests
 
 ```bash

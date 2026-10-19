@@ -97,7 +97,8 @@ class GameServer:
             return False
         if now - self.opening_done_at < SHOW_START_SECONDS:
             return False
-        self.game = ConquestPhase(self.game.players, self.game.owner, self.deck.draw, now)
+        self.game = ConquestPhase(self.game.players, self.game.owner, self.deck.draw, now,
+                                  board=self.game.board)
         return True
 
     def _client_loop(self, conn):

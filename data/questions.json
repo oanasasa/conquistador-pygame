@@ -1,0 +1,20 @@
+[
+  {
+    "q": "What is the capital of Romania?",
+    "choices": ["Cluj-Napoca", "Bucharest", "Iasi"],
+    "answer": 1,
+    "reviewed": true
+  },
+  {
+    "q": "In which year did Columbus reach the Americas?",
+    "choices": ["1392", "1492", "1592"],
+    "answer": 1,
+    "reviewed": true
+  },
+  {
+    "q": "Which river forms much of Romania's southern border?",
+    "choices": ["Mures", "Olt", "Danube"],
+    "answer": 2,
+    "reviewed": true
+  }
+]

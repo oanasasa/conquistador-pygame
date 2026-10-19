@@ -8,9 +8,12 @@ import threading
 import time
 
 from game.bot import Bot
+from game.conquest import ConquestPhase
 from game.opening import OpeningPhase
 from game.questions import QuestionDeck, load_questions
 from net import protocol
+
+SHOW_START_SECONDS = 3   # how long the starting regions show before the land grab
 
 
 class GameServer:
@@ -23,7 +26,8 @@ class GameServer:
         self.names = {}          # player id -> name (humans and bots)
         self.bots = {}           # player id -> Bot, played by the server itself
         self.host_id = None
-        self.game = None         # OpeningPhase once started
+        self.game = None         # OpeningPhase, then ConquestPhase
+        self.opening_done_at = None
         self.running = False
         self.sock = None
 
@@ -78,10 +82,23 @@ class GameServer:
                     continue
                 now = time.monotonic()
                 changed = self.game.tick(now)
+                changed = self._maybe_start_conquest(now) or changed
                 for bot in self.bots.values():
                     changed = bot.act(self.game, now) or changed
                 if changed:
                     self._broadcast_state()
+
+    def _maybe_start_conquest(self, now):
+        """After the opening, show the starting regions briefly, then begin."""
+        if not isinstance(self.game, OpeningPhase) or not self.game.is_done():
+            return False
+        if self.opening_done_at is None:
+            self.opening_done_at = now
+            return False
+        if now - self.opening_done_at < SHOW_START_SECONDS:
+            return False
+        self.game = ConquestPhase(self.game.players, self.game.owner, self.deck.draw, now)
+        return True
 
     def _client_loop(self, conn):
         pid = None
@@ -145,10 +162,13 @@ class GameServer:
                 del self.names[bot_id]
                 self._broadcast_lobby()
         elif kind == "pick" and self.game:
-            if self.game.submit_pick(pid, msg.get("region")):
-                self._send_state(pid)   # picks are hidden: only the picker hears back
+            if self.game.select(pid, msg.get("region"), now):
+                if self.game.picks_visible:
+                    self._broadcast_state()
+                else:
+                    self._send_state(pid)   # hidden picks: only the picker hears back
         elif kind == "answer" and self.game:
-            if self.game.answer_duel(pid, msg.get("choice"), now) is not None:
+            if self.game.answer(pid, msg.get("choice"), now) is not None:
                 self._broadcast_state()
 
     def _drop(self, pid):

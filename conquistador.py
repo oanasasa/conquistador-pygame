@@ -165,12 +165,11 @@ class App:
             self.poll_network()
             self.update_scene()
             self.popup.update()
-            compact = isinstance(self.scene, scenes.QuestionScene)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT or (
                         event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                     running = False
-                elif not self.popup.handle(event, compact):
+                else:
                     self.scene.handle(event)
             self.update_scene()
             self.scene.draw(self.screen)

@@ -1,6 +1,6 @@
 """The game map drawn as an old parchment map.
 
-The static parts (parchment, sea, land, rivers, mountains, borders, compass)
+The static parts (parchment, land, rivers, mountains, borders)
 are rendered once. Each frame adds the players' color washes, locked
 selections, highlights, castles and labels on top.
 """
@@ -20,7 +20,6 @@ INK = (74, 48, 24)
 INK_SOFT = (122, 88, 52)
 INK_FAINT = (176, 148, 108)
 RIVER = (78, 104, 128)
-SEA_INK = (128, 128, 118)
 GOLD = (196, 150, 60)
 
 # Player colors as heraldic watercolor: crimson, azure, vert.
@@ -164,8 +163,6 @@ class MapView:
                 pygame.draw.circle(stains, (150, 115, 60, 3), center, k)
         surf.blit(stains, (0, 0))
 
-        self._draw_sea(surf, ox, oy, rng)
-
         # Land: cream fill with a faint ink shadow along the coast and borders.
         land_surf = self.land_mask.to_surface(setcolor=(*LAND, 255), unsetcolor=(0, 0, 0, 0))
         shadow = self.land_mask.to_surface(setcolor=(120, 90, 50, 70), unsetcolor=(0, 0, 0, 0))
@@ -185,48 +182,8 @@ class MapView:
         self._draw_rivers(surf, ox, oy)
 
         self._draw_capital(surf, ox, oy)
-        self._draw_compass(surf, rng)
         self._draw_frame(surf)
         return surf
-
-    def _draw_sea(self, surf, ox, oy, rng):
-        """The Black Sea east of Dobrogea, with wavy hatching."""
-        dobrogea = next(i for i, l in enumerate(self.lands) if l["name"] == "Dobrogea")
-        w, h = self.map_rect.size
-        coast = {}
-        for y in range(h):
-            for x in range(w - 1, -1, -1):
-                r, g, _, _ = self.raster.get_at((x, y))
-                if g == 0:
-                    if r == dobrogea:
-                        coast[y] = x
-                    break
-        if not coast:
-            return
-        top = min(coast)
-        last = coast[max(coast)]
-        sea = pygame.Surface(surf.get_size(), pygame.SRCALPHA)
-        for y in range(top + oy, surf.get_height()):
-            my = y - oy
-            cx = coast.get(my)
-            if cx is None:
-                if my < max(coast):
-                    continue
-                cx = last + (my - max(coast)) // 3        # the coast keeps going south
-            fade = min(1.0, (y - top - oy) / 40)
-            sea.fill((150, 160, 150, int(40 * fade)), (cx + ox + 2, y, surf.get_width() - cx - ox, 1))
-        surf.blit(sea, (0, 0))
-        for y in range(top + oy + 24, surf.get_height() - 14, 9):
-            my = min(max(y - oy, top), max(coast))
-            start = coast.get(my, last) + ox + 10
-            for x in range(start, surf.get_width() - 20, 22):
-                pts = [(x + i, y + 2 * math.sin((x + i) / 4.0)) for i in range(0, 12, 2)]
-                pygame.draw.lines(surf, SEA_INK, False, pts, 1)
-        cx = surf.get_width() - 70
-        ink_text(surf, "Pontus", (cx, oy + int(self.map_rect.h * 0.62)), 18, INK_SOFT, italic=True,
-                 halo=False)
-        ink_text(surf, "Euxinus", (cx, oy + int(self.map_rect.h * 0.62) + 20), 18, INK_SOFT,
-                 italic=True, halo=False)
 
     def _draw_mountains(self, surf, ox, oy, rng):
         for ridge in RIDGES:
@@ -282,25 +239,6 @@ class MapView:
         pygame.draw.circle(surf, LAND, (x, y), 5)
         pygame.draw.circle(surf, INK, (x, y), 5, 1)
         pygame.draw.circle(surf, INK, (x, y), 2)
-
-    def _draw_compass(self, surf, rng):
-        cx, cy, r = 70, surf.get_height() - 78, 42
-        pygame.draw.circle(surf, INK_SOFT, (cx, cy), r, 1)
-        pygame.draw.circle(surf, INK_SOFT, (cx, cy), r - 6, 1)
-        for i in range(16):
-            a = math.radians(i * 22.5)
-            inner = r - 6 if i % 2 else r - 12
-            pygame.draw.line(surf, INK_FAINT, (cx + math.sin(a) * inner, cy - math.cos(a) * inner),
-                             (cx + math.sin(a) * (r - 1), cy - math.cos(a) * (r - 1)), 1)
-        for i in range(4):
-            a = math.radians(i * 90)
-            tip = (cx + math.sin(a) * (r + 6), cy - math.cos(a) * (r + 6))
-            left = (cx + math.sin(a - 1.57) * 7, cy - math.cos(a - 1.57) * 7)
-            right = (cx + math.sin(a + 1.57) * 7, cy - math.cos(a + 1.57) * 7)
-            pygame.draw.polygon(surf, INK if i == 0 else LAND, [tip, left, (cx, cy)])
-            pygame.draw.polygon(surf, INK_SOFT, [tip, right, (cx, cy)])
-            pygame.draw.lines(surf, INK, True, [tip, left, (cx, cy), right], 1)
-        ink_text(surf, "N", (cx, cy - r - 16), 16, INK, bold=True, halo=False)
 
     def _draw_frame(self, surf):
         w, h = surf.get_size()

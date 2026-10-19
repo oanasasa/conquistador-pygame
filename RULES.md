@@ -68,7 +68,7 @@ Played while any region is still free. Players cannot attack each other yet.
 1. Each round, every player has a fixed 10 seconds to select one free region
    next to their land. The round never ends early.
 2. Selections are visible to everyone. The first player to select a region
-   locks it, shown in that player's faded color, and nobody else can select it.
+   locks it, shown hatched in that player's color, and nobody else can select it.
    A player can change their selection, which releases the old region.
 3. When the 10 seconds are up, everyone who selected a region answers the same
    question (keys `1`-`3` or click), with 10 seconds to answer.

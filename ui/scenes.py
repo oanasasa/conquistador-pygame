@@ -481,7 +481,7 @@ class GrabSelect(Scene):
         if st["selectable"] or mine is not None:
             text(screen, "Land grab: choose a free region next to your land",
                  (MARGIN, 15), PLAYER_COLORS[me], size=36)
-            hint = ("Faded tiles are locked by other players. You can change your choice."
+            hint = ("Hatched lands are locked by other players. You can change your choice."
                     if mine is None else
                     f"You chose {region_name(mine)}. A question follows when the time is up.")
         else:
@@ -661,17 +661,17 @@ def answer_rows(res):
 
 
 class ResultPopup:
-    """Pops up after every question or turn with what happened. Over a
-    question it shrinks to a banner at the top so it doesn't cover the card."""
+    """Shows what happened after every question or turn. It sits in the
+    header strip above the map (or at the top, over a question card), so it
+    never covers the map or catches clicks."""
 
-    SHOW_MS = 3500
+    SHOW_MS = 4000
     POP_MS = 220
 
     def __init__(self, app):
         self.app = app
         self.key = None
         self.shown_at = 0
-        self.dismissed = False
 
     def result(self):
         st = self.app.state
@@ -683,19 +683,9 @@ class ResultPopup:
         if key != self.key:
             self.key = key
             self.shown_at = pygame.time.get_ticks()
-            self.dismissed = False
 
     def visible(self):
-        return (self.key is not None and not self.dismissed
-                and pygame.time.get_ticks() - self.shown_at < self.SHOW_MS)
-
-    def handle(self, event, compact):
-        """A click dismisses the big popup. Returns True if the click was used."""
-        if (self.visible() and not compact and event.type == pygame.MOUSEBUTTONDOWN
-                and event.button == 1):
-            self.dismissed = True
-            return True
-        return False
+        return self.key is not None and pygame.time.get_ticks() - self.shown_at < self.SHOW_MS
 
     def draw(self, screen, compact):
         if not self.visible():
@@ -703,12 +693,11 @@ class ResultPopup:
         res = self.result()
         title = result_line(self.app) or ""
         rows = answer_rows(res)
-        age = pygame.time.get_ticks() - self.shown_at
-        progress = min(1.0, age / self.POP_MS)
+        progress = min(1.0, (pygame.time.get_ticks() - self.shown_at) / self.POP_MS)
         if compact:
             self.draw_banner(screen, title, rows, progress)
         else:
-            self.draw_card(screen, title, rows, progress, age)
+            self.draw_header(screen, title, rows, progress)
 
     def draw_banner(self, screen, title, rows, progress):
         parts = [title] + [f"{self.app.player_name(p)}: {d}" for p, _, d in rows]
@@ -718,27 +707,18 @@ class ResultPopup:
         draw_card(screen, rect, YELLOW, radius=10)
         text(screen, wrap_text(line, 24, rect.w - 24)[0], (rect.x + 12, rect.y + 12), WHITE, size=24)
 
-    def draw_card(self, screen, title, rows, progress, age):
-        w = 560
-        title_lines = wrap_text(title, 30, w - 40)
-        h = 30 + len(title_lines) * 30 + (12 + len(rows) * 36 if rows else 0) + 30
-        surf = pygame.Surface((w, h), pygame.SRCALPHA)
-        draw_card(surf, surf.get_rect(), YELLOW)
-        y = 22
-        for line in title_lines:
-            text(surf, line, (20, y), YELLOW, size=30)
-            y += 30
-        y += 12
+    def draw_header(self, screen, title, rows, progress):
+        """Result in the strip between the scene title and the map."""
+        strip = pygame.Rect(0, 90, WIDTH, BOARD_TOP - 92)
+        pygame.draw.rect(screen, BG, strip)                    # replaces the plain result line
+        slide = int(-30 * (1 - ease_out_back(progress)))
+        x = MARGIN + slide
+        pygame.draw.rect(screen, YELLOW, (x, strip.y + 4, 4, strip.h - 8), border_radius=2)
+        text(screen, title, (x + 14, strip.y + 4), YELLOW, size=26)
+        x += 14
         for player, correct, detail in rows:
-            draw_mark(surf, (32, y + 12), correct)
-            name = self.app.player_name(player)
-            r = text(surf, name, (52, y + 2), PLAYER_COLORS[player], size=28)
-            text(surf, detail, (r.right + 12, y + 4), WHITE, size=26)
-            y += 36
-        text(surf, "click to close", (w - 120, h - 24), GRAY, size=20)
-        fade = max(0.0, min(1.0, (self.SHOW_MS - age) / 400))   # fade out at the end
-        surf.set_alpha(int(255 * fade))
-        scale = 0.8 + 0.2 * ease_out_back(progress)
-        if scale != 1.0:
-            surf = pygame.transform.smoothscale(surf, (int(w * scale), int(h * scale)))
-        screen.blit(surf, surf.get_rect(center=(WIDTH // 2, BOARD_TOP + 210)))
+            draw_mark(screen, (x + 9, strip.y + 39), correct, r=9)
+            r = text(screen, self.app.player_name(player), (x + 24, strip.y + 30),
+                     PLAYER_COLORS[player], size=24)
+            r = text(screen, detail, (r.right + 8, strip.y + 31), WHITE, size=22)
+            x = r.right + 24

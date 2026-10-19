@@ -5,9 +5,9 @@ Pure game logic with no pygame and no sockets. Times are passed in as `now`
 """
 import random
 
+from game.board import NUM_REGIONS
 from game.questions import public_view
 
-NUM_REGIONS = 12
 PICK_SECONDS = 15
 DUEL_SECONDS = 10
 
@@ -21,9 +21,9 @@ class Duel:
         self.asked_at = 0.0
         self.locked_out = set()
 
-    def ask(self, question, now):
+    def ask(self, question, number, now):
         self.question = question
-        self.question_no += 1
+        self.question_no = number
         self.asked_at = now
         self.locked_out = set()
 
@@ -42,6 +42,7 @@ class OpeningPhase:
         self.duels = []            # queued Duels
         self.duel = None           # the Duel being played
         self.last_result = None    # {"region", "winner", "elapsed"} of the last duel
+        self.questions_asked = 0   # numbers questions across all duels
         self.phase = None
         self.deadline = 0.0
         self._start_pick_round(set(self.players), now)
@@ -116,11 +117,31 @@ class OpeningPhase:
             self.duel.locked_out.discard(player)
         self._settle_uncontested(now)
 
+    # ---- shared interface (server and bots) ----------------------------
+
+    picks_visible = False
+
+    def select(self, player, region, now=None):
+        return self.submit_pick(player, region)
+
+    def answer(self, player, choice, now):
+        return self.answer_duel(player, choice, now)
+
+    def bot_task(self, player):
+        """What `player` could do now: (kind, token, options) or None."""
+        if self.phase == "pick" and player in self.pickers:
+            return ("select", self.deadline, self.free_regions())
+        if (self.phase == "duel" and player in self.duel.players
+                and player not in self.duel.locked_out):
+            return ("answer", self.deadline, self.duel.question)
+        return None
+
     # ---- snapshots -----------------------------------------------------
 
     def public_state(self, viewer, now):
         """What `viewer` may see. Other players' picks and all answers stay hidden."""
         state = {
+            "stage": "opening",
             "phase": self.phase,
             "remaining": max(0.0, self.deadline - now) if self.phase in ("pick", "duel") else 0.0,
             "owner": {str(r): p for r, p in self.owner.items()},
@@ -179,7 +200,8 @@ class OpeningPhase:
             self.duel = None
 
     def _ask(self, now):
-        self.duel.ask(self.next_question(), now)
+        self.questions_asked += 1
+        self.duel.ask(self.next_question(), self.questions_asked, now)
         self.deadline = now + DUEL_SECONDS
 
     def _finish_duel(self, winner, now, elapsed):

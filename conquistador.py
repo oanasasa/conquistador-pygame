@@ -82,8 +82,14 @@ class App:
         if self.client:
             self.client.send(msg)
 
+    def question_token(self):
+        """Identifies the question on screen, so each one is answered once."""
+        st = self.state
+        number = st["duel"]["question_no"] if st.get("duel") else st.get("question_no")
+        return (st["stage"], number)
+
     def answer(self, choice):
-        self.answered_q = self.state["duel"]["question_no"]
+        self.answered_q = self.question_token()
         self.send({"t": "answer", "choice": choice})
 
     def remaining(self):
@@ -144,6 +150,9 @@ class App:
             self.scene = {
                 "name": scenes.NameEntry, "lobby": scenes.Lobby, "room": scenes.Room,
                 "pick": scenes.MapPick, "duel": scenes.Duel, "done": scenes.Done,
+                "grab_select": scenes.GrabSelect, "grab_question": scenes.GrabQuestion,
+                "war_select": scenes.WarSelect, "war_duel": scenes.WarDuel,
+                "over": scenes.GameOver,
             }[key](self)
 
     def run(self):

@@ -31,7 +31,7 @@ macOS may ask to allow incoming connections for Python; allow it so others can j
 ## Controls
 
 - Mouse: buttons and picking regions
-- `1`-`3`: answer a bonus question
+- `1`-`3`: answer a question
 - `Esc`: quit
 
 ## Tests

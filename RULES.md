@@ -3,9 +3,9 @@
 ## Overview
 
 Conquistador is a quiz-based territory game for 2 to 3 players, each on their
-own computer on the same local network (LAN). Players buzz in to answer
-general knowledge questions. The correct answerer claims a region on the map. The game ends when one player controls
-every region.
+own computer on the same local network (LAN). Players answer general
+knowledge questions to grab free land, then attack each other's regions and
+castles. The game ends when one player controls every region.
 
 ## Players
 
@@ -52,40 +52,48 @@ every region.
    regions. If they pick the same region again, another bonus question
    decides it.
 6. A player who never picks gets a random free region once all duels are done.
-7. When every player owns one starting region, the main game begins.
+7. When every player owns one starting region, that region becomes their
+   **base**: a castle with 3 towers. The land grab begins.
 
-## Turn structure
+Regions are neighbors when they share an edge (no diagonals).
 
-Each round has two phases.
+## Land grab
 
-### 1. Question phase
+Played while any region is still free. Players cannot attack each other yet.
 
-1. A question appears with its answer choices (numbered 1 to 3).
-2. Players may buzz in at any time after the question appears. The first
-   player to buzz gets the chance to answer.
-3. The buzzing player presses `1`, `2`, or `3` to answer within the time limit.
-4. **Correct answer:** the player moves to the claim phase.
-5. **Wrong answer:** the player is locked out of this question. Remaining
-   players may buzz in.
-6. If every player is locked out, no one claims a region. A new question starts.
+1. Each round, every player has a fixed 10 seconds to select one free region
+   next to their land. The round never ends early.
+2. Selections are visible to everyone. The first player to select a region
+   locks it, shown in that player's faded color, and nobody else can select it.
+   A player can change their selection, which releases the old region.
+3. When the 10 seconds are up, everyone who selected a region answers the same
+   question (keys `1`-`3` or click), with 10 seconds to answer.
+4. Each player who answers correctly takes the region they selected. A wrong
+   answer or no answer means no region this round.
+5. If nobody selected anything, a new round starts.
+6. When no free region is left, the war begins.
 
-### 2. Claim phase
+## War
 
-1. The player who answered correctly clicks one region on the map.
-2. The region becomes owned by that player, even if another player owned it.
-3. A player cannot claim a region they already own.
-4. A new question starts.
+1. Players take turns in a fixed order. On your turn you have a fixed
+   10 seconds to choose one enemy region next to your land. You can change your
+   choice until the time is up. If you choose nothing, your turn is skipped.
+2. **Normal region:** you duel its owner with one question. The quickest
+   correct answer wins, and a wrong answer locks that player out of the
+   question. If you win, you take the region. If the owner wins, both answer
+   wrong, or time runs out, the owner keeps it.
+3. **Base:** attacking a base is a siege of up to 3 duel questions in a row,
+   one per tower. Each question you win destroys a tower. Questions the
+   defender wins, or that nobody wins, leave the tower standing.
+4. Destroyed towers stay destroyed, so other players can finish off a weakened
+   base on later turns.
+5. When a base's last tower falls, the attacker takes all of that player's
+   land and that player is out of the game.
+6. Other players watch every duel and see the question but cannot answer.
 
 ## Winning
 
-- A player wins immediately when they own every region on the map.
-- Check for a winner after each claim.
-
-## Time limits
-
-- Each question has a short time limit (recommended: 5 to 8 seconds) to
-  discourage looking up answers.
-- If the time runs out with no buzz, the question is skipped.
+- The last player standing owns the whole map and wins.
 
 ## Question rules
 
@@ -100,9 +108,7 @@ Each round has two phases.
 - Players may not discuss answers while a question is open.
 - The owner decides any disputed answer, and the decision is final.
 
-## Open questions (to decide before the first full game)
+## Open questions
 
-- Which key buzzes in during the main game, now that each player has their
-  own keyboard?
-- How many seconds should the time limit be?
-- Should a wrong answer cost the player their next claim?
+- How long should questions stay open (currently 10 seconds)?
+- Should the war turn order rotate who goes first each game?

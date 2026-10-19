@@ -165,3 +165,18 @@ def test_repick_round_ends_when_the_loser_picks():
     assert g.phase == "pick" and g.pickers == {1}
     g.submit_pick(1, 9)
     assert g.tick(3.0) and g.is_done()
+
+
+def test_question_numbers_keep_counting_across_duels():
+    # The client blocks re-answering by question number, so a second duel must
+    # not reuse the first duel's numbers.
+    g = make()
+    for p in (0, 1, 2):
+        g.submit_pick(p, 6)
+    t = end_picks(g, 0)
+    first = g.duel.question_no
+    g.answer_duel(0, RIGHT, t + 1)
+    g.submit_pick(1, 8)
+    g.submit_pick(2, 8)
+    end_picks(g, t + 1)
+    assert g.duel.question_no > first

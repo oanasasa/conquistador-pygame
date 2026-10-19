@@ -50,7 +50,7 @@ class App:
         self.browser = RoomBrowser()
         self.error = self.browser.error
 
-    def create_room(self):
+    def create_room(self, with_bot=False):
         server = GameServer(f"{self.name}'s room")
         try:
             server.start()
@@ -60,6 +60,8 @@ class App:
         self.server = server
         self.announcer = RoomAnnouncer(server)
         self.join("127.0.0.1", server.port)
+        if with_bot:
+            self.send({"t": "add_bot"})   # server handles it right after our hello
 
     def join(self, ip, port):
         self.error = None

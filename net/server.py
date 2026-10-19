@@ -7,6 +7,7 @@ import socket
 import threading
 import time
 
+from game.bot import Bot
 from game.opening import OpeningPhase
 from game.questions import QuestionDeck, load_questions
 from net import protocol
@@ -19,7 +20,8 @@ class GameServer:
         self.deck = QuestionDeck(load_questions())
         self.lock = threading.Lock()
         self.clients = {}        # player id -> socket
-        self.names = {}          # player id -> name
+        self.names = {}          # player id -> name (humans and bots)
+        self.bots = {}           # player id -> Bot, played by the server itself
         self.host_id = None
         self.game = None         # OpeningPhase once started
         self.running = False
@@ -72,7 +74,13 @@ class GameServer:
         while self.running:
             time.sleep(0.1)
             with self.lock:
-                if self.game and self.game.tick(time.monotonic()):
+                if not self.game:
+                    continue
+                now = time.monotonic()
+                changed = self.game.tick(now)
+                for bot in self.bots.values():
+                    changed = bot.act(self.game, now) or changed
+                if changed:
                     self._broadcast_state()
 
     def _client_loop(self, conn):
@@ -123,6 +131,19 @@ class GameServer:
                 self.game = OpeningPhase(sorted(self.names), self.deck.draw, now)
                 self._broadcast_lobby()
                 self._broadcast_state()
+        elif kind == "add_bot" and pid == self.host_id and self.game is None:
+            free = [i for i in range(protocol.MAX_PLAYERS) if i not in self.names]
+            if free:
+                n = len(self.bots) + 1
+                self.names[free[0]] = "Bot" if n == 1 else f"Bot {n}"
+                self.bots[free[0]] = Bot(free[0])
+                self._broadcast_lobby()
+        elif kind == "remove_bot" and pid == self.host_id and self.game is None:
+            if self.bots:
+                bot_id = max(self.bots)
+                del self.bots[bot_id]
+                del self.names[bot_id]
+                self._broadcast_lobby()
         elif kind == "pick" and self.game:
             if self.game.submit_pick(pid, msg.get("region")):
                 self._send_state(pid)   # picks are hidden: only the picker hears back
@@ -139,7 +160,8 @@ class GameServer:
             self._broadcast_state()
         else:
             if pid == self.host_id:
-                self.host_id = min(self.names) if self.names else None
+                humans = [i for i in self.names if i not in self.bots]
+                self.host_id = min(humans) if humans else None
             self._broadcast_lobby()
 
     # ---- sending -------------------------------------------------------
@@ -147,7 +169,8 @@ class GameServer:
     def _lobby_msg(self):
         return {"t": "lobby", "room": self.room_name, "host": self.host_id,
                 "started": self.game is not None,
-                "players": [{"id": i, "name": n} for i, n in sorted(self.names.items())]}
+                "players": [{"id": i, "name": n, "bot": i in self.bots}
+                            for i, n in sorted(self.names.items())]}
 
     def _broadcast_lobby(self):
         msg = self._lobby_msg()

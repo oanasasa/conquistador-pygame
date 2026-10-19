@@ -50,6 +50,7 @@ class Lobby(Scene):
     def __init__(self, app):
         super().__init__(app)
         self.create = Button((MARGIN, 90, 220, 44), "Create room")
+        self.solo = Button((MARGIN + 240, 90, 220, 44), "Play vs bot")
         self.ip = TextInput((MARGIN, HEIGHT - 120, 260, 44), placeholder="host IP, e.g. 192.168.1.5",
                             max_len=40)
         self.ip.active = False
@@ -59,6 +60,9 @@ class Lobby(Scene):
     def handle(self, event):
         if self.create.clicked(event):
             self.app.create_room()
+            return
+        if self.solo.clicked(event):
+            self.app.create_room(with_bot=True)
             return
         if (self.ip.handle(event) or self.join_ip.clicked(event)) and self.ip.value.strip():
             self.app.join(self.ip.value.strip(), protocol.GAME_PORT)
@@ -72,6 +76,7 @@ class Lobby(Scene):
         screen.fill(BG)
         text(screen, f"Hi {self.app.name}!", (MARGIN, 20), size=42)
         self.create.draw(screen)
+        self.solo.draw(screen, (60, 140, 80))
         text(screen, "Rooms on your network:", (MARGIN, 160), GRAY)
         rooms = self.app.browser.list_rooms() if self.app.browser else []
         self.room_buttons = []
@@ -101,12 +106,18 @@ class Room(Scene):
         super().__init__(app)
         self.start = Button((MARGIN, 400, 200, 50), "Start")
         self.leave = Button((MARGIN + 220, 400, 160, 50), "Leave")
+        self.add_bot = Button((MARGIN + 400, 400, 160, 50), "Add bot")
+        self.remove_bot = Button((MARGIN + 580, 400, 180, 50), "Remove bot")
 
     def handle(self, event):
         if self.start.clicked(event):
             self.app.send({"t": "start"})
         elif self.leave.clicked(event):
             self.app.leave()
+        elif self.add_bot.clicked(event):
+            self.app.send({"t": "add_bot"})
+        elif self.remove_bot.clicked(event):
+            self.app.send({"t": "remove_bot"})
 
     def draw(self, screen):
         screen.fill(BG)
@@ -123,14 +134,21 @@ class Room(Scene):
                 tag.append("host")
             if p["id"] == self.app.you:
                 tag.append("you")
+            if p.get("bot"):
+                tag.append("computer")
             label = p["name"] + (f"  ({', '.join(tag)})" if tag else "")
             text(screen, label, (MARGIN + 50, y + 8))
         is_host = self.app.you is not None and self.app.you == lobby.get("host")
         if is_host:
             self.start.enabled = len(players) >= protocol.MIN_PLAYERS
             self.start.draw(screen, (60, 140, 80))
+            self.add_bot.enabled = len(players) < protocol.MAX_PLAYERS
+            self.add_bot.draw(screen)
+            self.remove_bot.enabled = any(p.get("bot") for p in players)
+            self.remove_bot.draw(screen)
             if not self.start.enabled:
-                text(screen, "Waiting for at least one more player...", (MARGIN, 470), GRAY, size=26)
+                text(screen, "Waiting for another player, or add a bot to play alone.",
+                     (MARGIN, 470), GRAY, size=26)
         else:
             text(screen, "Waiting for the host to start...", (MARGIN, 470), GRAY, size=26)
         self.leave.draw(screen, (120, 70, 70))

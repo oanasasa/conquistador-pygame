@@ -23,6 +23,8 @@ python conquistador.py
    list, or type the host's IP (shown on the host's screen) and click **Join IP**.
 3. The host clicks **Start** once 2-3 players are in.
 
+To play alone, click **Play vs bot**, then **Start**. The host can also use **Add bot** in the room to fill empty seats.
+
 To try it on one machine, open several terminals and join `127.0.0.1`.
 macOS may ask to allow incoming connections for Python; allow it so others can join.
 

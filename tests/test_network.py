@@ -69,3 +69,20 @@ def test_room_full_and_late_join_rejected(server):
     assert wait_for(extra, "error")["msg"] == "Room is full"
     for c in clients + [extra]:
         c.close()
+
+
+def test_host_adds_bot_and_plays_alone(server):
+    a = GameClient("127.0.0.1", PORT, "Ana")
+    wait_for(a, "welcome")
+    a.send({"t": "add_bot"})
+    lobby = wait_for(a, "lobby", lambda m: len(m["players"]) == 2)
+    assert lobby["players"][1]["bot"] and lobby["host"] == 0
+    a.send({"t": "start"})
+    wait_for(a, "state", lambda m: m["phase"] == "pick")
+    a.send({"t": "pick", "region": 0})
+    # The pick round is shortened to 0.5s, so the bot usually misses it and gets
+    # a random free region; either way the game must reach "done".
+    st = wait_for(a, "state", lambda m: m["phase"] == "done", timeout=8)
+    assert st["owner"]["0"] == 0
+    assert sorted(st["owner"].values()) == [0, 1]
+    a.close()

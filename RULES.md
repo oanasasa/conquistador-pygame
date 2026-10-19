@@ -21,6 +21,10 @@ every region.
   by typing the host's IP address.
 - A room holds at most 3 players. Nobody can join after the game starts.
 - The host clicks Start once at least 2 players are in the room.
+- The host can add computer players (bots) to fill empty seats, so one person
+  can play alone. Bots count as players and follow the same rules. A bot
+  picks a random free region and answers bonus questions after a few seconds,
+  correctly about 60% of the time.
 
 ## Setup
 

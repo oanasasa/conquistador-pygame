@@ -61,6 +61,14 @@ castles. The game ends when one player controls every region.
 Two lands are neighbors when they share a border. Lands that only touch at a
 single point are not neighbors.
 
+## Between riddles
+
+- After every riddle that ends a turn or a round, the game pauses for about
+  3 seconds. A card shows what happened (who answered, right or wrong, and how
+  fast) and what comes next ("Make ready to choose thy next land!").
+- The next selection timer only starts after this pause. No land can be chosen
+  during it.
+
 ## Land grab
 
 Played while any region is still free. Players cannot attack each other yet.

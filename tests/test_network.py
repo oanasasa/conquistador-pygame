@@ -23,6 +23,7 @@ def wait_for(client, kind, pred=lambda m: True, timeout=3.0):
 @pytest.fixture
 def server(monkeypatch):
     monkeypatch.setattr(opening, "PICK_SECONDS", 0.5)
+    monkeypatch.setattr(opening, "INTERLUDE_SECONDS", 0.2)
     s = GameServer("test room", port=PORT)
     s.start()
     yield s
@@ -53,11 +54,13 @@ def test_lobby_pick_and_duel(server):
     correct = server.game.duel.question["answer"]
     q = duel["question_no"]
     b.send({"t": "answer", "choice": correct, "q": q})
+    assert wait_for(b, "judged")["correct"] is True        # only Bob hears his verdict
     st = wait_for(a, "state", lambda m: m["last_result"] is not None)
     assert st["last_result"]["winner"] == 1
     assert st["owner"] == {"4": 1}
     assert st["duel"]["reveal"] and st["duel"]["waiting"] == [0]   # Ana can still answer
     a.send({"t": "answer", "choice": correct, "q": q})
+    assert wait_for(a, "judged")["correct"] is True        # right, if too slow
     st = wait_for(a, "state", lambda m: m["phase"] == "pick")
     assert st["pickers"] == [0]
     late = st["last_result"]["answers"][-1]

@@ -28,10 +28,18 @@ To play alone, click **Play vs bot**, then **Start**. The host can also use **Ad
 To try it on one machine, open several terminals and join `127.0.0.1`.
 macOS may ask to allow incoming connections for Python; allow it so others can join.
 
+## Sound
+
+The game plays the sound files in `assets/audio/` (the README there lists
+them): a theme looping in the menus and halls, a clock ticking during riddles,
+win and lose sounds for your own answers, and a cannon when a castle tower
+falls. Press `M` to mute or unmute.
+
 ## Controls
 
 - Mouse: buttons and picking regions
 - `1`-`4`: answer a question
+- `M`: mute or unmute
 - `Esc`: quit
 
 ## Map data

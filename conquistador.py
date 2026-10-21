@@ -9,6 +9,7 @@ from net.client import GameClient
 from net.discovery import RoomAnnouncer, RoomBrowser
 from net.server import GameServer
 from ui import scenes
+from ui.sound import Sounds
 from ui.widgets import HEIGHT, WIDTH
 
 
@@ -38,6 +39,7 @@ class App:
         self.scene_key = None
         self.scene = None
         self.popup = scenes.ResultPopup(self)
+        self.sound = Sounds()
 
     def _reset_session(self):
         self.you = None
@@ -46,6 +48,7 @@ class App:
         self.state_at = 0.0
         self.answered_q = None
         self.answered_choice = None
+        self.heard_result = None
 
     # ---- actions used by scenes ----------------------------------------
 
@@ -138,6 +141,9 @@ class App:
             elif kind == "state":
                 self.state = msg
                 self.state_at = time.monotonic()
+                self.hear_result(msg.get("stage"), msg.get("last_result"))
+            elif kind == "judged":
+                self.sound.play("win" if msg.get("correct") else "lose")
             elif kind == "error":
                 self.error = msg["msg"]
             elif kind == "disconnected":
@@ -145,6 +151,14 @@ class App:
                 self.leave()
                 self.error = error
                 return
+
+    def hear_result(self, stage, res):
+        """The cannon roars once for every castle tower toppled."""
+        if not res or (stage, res.get("no")) == self.heard_result:
+            return
+        self.heard_result = (stage, res.get("no"))
+        if res.get("kind") == "attack" and res.get("base") and res.get("attacker_won"):
+            self.sound.play("cannon")
 
     # ---- scenes --------------------------------------------------------
 
@@ -157,6 +171,8 @@ class App:
             return "room"
         return self.state["phase"]
 
+    MENU_SCENES = ("name", "lobby", "settings", "room")
+
     def update_scene(self):
         key = self.current_key()
         if key != self.scene_key:
@@ -167,7 +183,7 @@ class App:
                 "pick": scenes.MapPick, "duel": scenes.Duel, "done": scenes.Done,
                 "grab_select": scenes.GrabSelect, "grab_question": scenes.GrabQuestion,
                 "war_select": scenes.WarSelect, "war_duel": scenes.WarDuel,
-                "over": scenes.GameOver,
+                "over": scenes.GameOver, "interlude": scenes.Interlude,
             }[key](self)
 
     def run(self):
@@ -177,15 +193,24 @@ class App:
             self.poll_network()
             self.update_scene()
             self.popup.update()
+            self.sound.lobby_music(self.scene_key in self.MENU_SCENES)
+            if not isinstance(self.scene, scenes.QuestionScene):
+                self.sound.riddle_clock(False)
+            self.sound.update()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT or (
                         event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                     running = False
+                elif (event.type == pygame.KEYDOWN and event.key == pygame.K_m
+                      and not self.scene.typing()):
+                    self.sound.toggle_mute()
                 else:
                     self.scene.handle(event)
             self.update_scene()
             self.scene.draw(self.screen)
             self.popup.draw(self.screen, isinstance(self.scene, scenes.QuestionScene))
+            if self.scene_key in self.MENU_SCENES:
+                scenes.draw_mute_hint(self.screen, self.sound.muted)
             pygame.display.flip()
             clock.tick(60)
         self.leave()
@@ -194,6 +219,7 @@ class App:
 
 
 def main():
+    pygame.mixer.pre_init(44100, -16, 2, 512)    # CD quality for the audio files
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Conquistador")

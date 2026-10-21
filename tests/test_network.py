@@ -23,6 +23,7 @@ def wait_for(client, kind, pred=lambda m: True, timeout=3.0):
 @pytest.fixture
 def server(monkeypatch):
     monkeypatch.setattr(opening, "PICK_SECONDS", 0.5)
+    monkeypatch.setattr(opening, "INTERLUDE_SECONDS", 0.2)
     s = GameServer("test room", port=PORT)
     s.start()
     yield s

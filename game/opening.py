@@ -10,6 +10,7 @@ from game.questions import REVEAL_SECONDS, Reveal, public_view
 
 PICK_SECONDS = 15
 DUEL_SECONDS = 10
+INTERLUDE_SECONDS = 3      # pause after a duel, before the losers choose again
 
 
 class Duel:
@@ -31,7 +32,12 @@ class Duel:
 
 
 class OpeningPhase:
-    def __init__(self, players, next_question, now, board=None, rng=None):
+    def __init__(self, players, next_question, now, board=None, rng=None, interlude=None):
+        # Pause before a re-pick so everyone sees the duel's outcome first;
+        # 0 skips it (used by tests of the rules themselves).
+        self.interlude = INTERLUDE_SECONDS if interlude is None else interlude
+        self._after_interlude = None
+        self._next_pickers = []
         self.players = list(players)
         self.next_question = next_question   # callable returning a question dict
         self.board = board or default_board()
@@ -114,6 +120,12 @@ class OpeningPhase:
         """Handle expired timers. Returns True if the state changed.
 
         A pick round ends early once every picker has chosen a region."""
+        if self.phase == "interlude":
+            if now >= self.deadline:
+                then, self._after_interlude = self._after_interlude, None
+                then(now)
+                return True
+            return False
         if self.reveal:
             if now >= self.deadline:
                 self._end_reveal(now)
@@ -174,10 +186,13 @@ class OpeningPhase:
         state = {
             "stage": "opening",
             "phase": self.phase,
-            "remaining": max(0.0, self.deadline - now) if self.phase in ("pick", "duel") else 0.0,
+            "remaining": (max(0.0, self.deadline - now)
+                          if self.phase in ("pick", "duel", "interlude") else 0.0),
             "owner": {str(r): p for r, p in self.owner.items()},
             "pickers": sorted(self.pickers),
             "your_pick": self.picks.get(viewer),
+            "next": ({"phase": "pick", "pickers": self._next_pickers}
+                     if self.phase == "interlude" else None),
             "last_result": self.last_result,
             "duel": None,
         }
@@ -226,7 +241,14 @@ class OpeningPhase:
             self._settle_uncontested(now)
         elif self.repickers:
             losers, self.repickers = self.repickers, set()
-            self._start_pick_round(losers, now)
+            if self.interlude > 0:
+                self.phase = "interlude"
+                self.duel = None
+                self.deadline = now + self.interlude
+                self._next_pickers = sorted(losers)
+                self._after_interlude = lambda t: self._start_pick_round(losers, t)
+            else:
+                self._start_pick_round(losers, now)
         else:
             self._assign_random()
             self.phase = "done"

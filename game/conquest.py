@@ -18,14 +18,19 @@ from game.questions import REVEAL_SECONDS, Reveal, public_view
 
 SELECT_SECONDS = 10
 QUESTION_SECONDS = 10
+INTERLUDE_SECONDS = 3      # pause after a riddle, before choosing land again
 TOWERS = 3
 
 
 class ConquestPhase:
     picks_visible = True
 
-    def __init__(self, players, owner, next_question, now, board=None):
+    def __init__(self, players, owner, next_question, now, board=None, interlude=None):
         self.board = board or default_board()
+        # Pause after each riddle so everyone sees what happened before choosing
+        # again; 0 skips it (used by tests of the rules themselves).
+        self.interlude = INTERLUDE_SECONDS if interlude is None else interlude
+        self._after_interlude = None
         self.players = sorted(players)                       # alive, in turn order
         self.owner = dict(owner)                             # region -> player
         self.bases = {p: r for r, p in owner.items()}        # player -> base region
@@ -122,6 +127,10 @@ class ConquestPhase:
         """Handle expired timers. Returns True if the state changed."""
         if now < self.deadline:
             return False
+        if self.phase == "interlude":
+            then, self._after_interlude = self._after_interlude, None
+            then(now)
+            return True
         if self.reveal:
             self._end_reveal(now)
             return True
@@ -141,7 +150,7 @@ class ConquestPhase:
             region = self.selections.get(self.attacker)
             if region is None:
                 self._result({"kind": "skip", "attacker": self.attacker})
-                self._next_turn(now)
+                self._pause_then(now, self._next_turn)
             else:
                 defender = self.owner[region]
                 self.attack = {"region": region, "defender": defender,
@@ -219,6 +228,7 @@ class ConquestPhase:
             "answering": [],
             "answered": [],
             "attack": None,
+            "next": self.upcoming() if self.phase == "interlude" else None,
         }
         if self.phase in ("grab_question", "war_duel"):
             state["question"] = public_view(self.question)
@@ -291,7 +301,7 @@ class ConquestPhase:
         self._result({"kind": "grab", "won": {str(p): r for p, r in won.items()},
                       "missed": missed, "answers": sorted(self.answers, key=lambda a: a["elapsed"])})
         self.answering, self.answered = set(), {}
-        self._next_round(now)
+        self._pause_then(now, self._next_round)
 
     def _duel_won(self, winner, now):
         """Resolve one war question. `winner` is None if the defender held by default."""
@@ -343,7 +353,31 @@ class ConquestPhase:
             self.attack["locked_out"] = set()
             self._ask(now)
         else:
-            self._next_turn(now)
+            self._pause_then(now, self._next_turn)
+
+    def _pause_then(self, now, then):
+        """Show what happened for a moment, then continue with `then(now)`.
+        The selection timer only starts after the pause."""
+        if self.interlude <= 0 or len(self.players) <= 1:
+            then(now)
+            return
+        self.phase = "interlude"
+        self.selections = {}
+        self.question = None
+        self.deadline = now + self.interlude
+        self._after_interlude = then
+
+    def upcoming(self):
+        """What follows the current interlude, for the players to see."""
+        if len(self.players) <= 1:
+            return {"phase": "over"}
+        if self.free_regions():
+            return {"phase": "grab_select"}
+        prev = self.attacker
+        if prev is None:
+            return {"phase": "war_select", "attacker": self.players[0]}
+        later = [p for p in self.players if p > prev]
+        return {"phase": "war_select", "attacker": later[0] if later else self.players[0]}
 
     def _check_winner(self):
         """Bases only fall with all their land, so the last player standing

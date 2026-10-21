@@ -19,7 +19,8 @@ GRID = grid_board(4, 3)
 
 
 def make(owner, now=0.0):
-    return ConquestPhase(sorted(set(owner.values())), owner, lambda: FAKE_Q, now, board=GRID)
+    return ConquestPhase(sorted(set(owner.values())), owner, lambda: FAKE_Q, now, board=GRID,
+                         interlude=0)
 
 
 def test_neighbors_and_frontier():
@@ -118,7 +119,7 @@ def test_war_starts_when_no_free_land():
 def full_board():
     """Player 0: left half (base 0). Player 1: right half (base 3)."""
     owner = {r: (0 if r % 4 < 2 else 1) for r in range(12)}
-    g = ConquestPhase([0, 1], owner, lambda: FAKE_Q, 0.0, board=GRID)
+    g = ConquestPhase([0, 1], owner, lambda: FAKE_Q, 0.0, board=GRID, interlude=0)
     g.bases = {0: 0, 1: 3}
     return g
 
@@ -223,7 +224,7 @@ def test_towers_stay_destroyed_between_attacks():
 
 def test_base_falls_eliminates_only_that_player_with_three():
     owner = {0: 0, 1: 0, 2: 1, 3: 1, 4: 0, 5: 0, 6: 1, 7: 1, 8: 2, 9: 2, 10: 2, 11: 2}
-    g = ConquestPhase([0, 1, 2], owner, lambda: FAKE_Q, 0.0, board=GRID)
+    g = ConquestPhase([0, 1, 2], owner, lambda: FAKE_Q, 0.0, board=GRID, interlude=0)
     g.bases = {0: 0, 1: 3, 2: 11}
     g.towers[2] = 1
     g.attacker = 0                       # make player 1 the next attacker
@@ -259,7 +260,7 @@ def test_disconnect_frees_land_then_grab_resumes():
 
 def test_bots_play_a_full_game_to_the_end():
     owner = {0: 0, 3: 1, 9: 2}
-    g = ConquestPhase([0, 1, 2], owner, lambda: FAKE_Q, 0.0, board=GRID)
+    g = ConquestPhase([0, 1, 2], owner, lambda: FAKE_Q, 0.0, board=GRID, interlude=0)
     bots = [Bot(p, random.Random(p), accuracy=0.5) for p in (0, 1, 2)]
     t = 0.0
     while not g.is_done() and t < 5000:
@@ -304,3 +305,49 @@ def test_results_are_numbered():
     first = g.last_result["no"]
     g.tick(2 * SELECT_SECONDS)
     assert g.last_result["no"] == first + 1
+
+
+# ---- the pause between a riddle and choosing again -------------------------
+
+def test_after_a_grab_riddle_the_game_pauses_before_the_next_selection():
+    g = ConquestPhase([0, 1], {0: 0, 11: 1}, lambda: FAKE_Q, 0.0, board=GRID, interlude=3)
+    g.select(0, 1)
+    g.select(1, 10)
+    t = SELECT_SECONDS
+    g.tick(t)
+    g.answer(0, RIGHT, t + 1)
+    g.answer(1, RIGHT, t + 2)
+    assert g.phase == "interlude" and g.owner[1] == 0
+    state = g.public_state(0, t + 2)
+    assert state["next"] == {"phase": "grab_select"} and state["remaining"] == 3
+    assert g.selectable(0) == [] and not g.select(0, 2)    # no choosing during the pause
+    assert not g.tick(t + 4.9)
+    assert g.tick(t + 5)
+    assert g.phase == "grab_select"
+    assert g.deadline == t + 5 + SELECT_SECONDS             # the timer starts after the pause
+
+
+def test_after_a_war_duel_the_pause_names_the_next_attacker():
+    owner = {r: (0 if r % 4 < 2 else 1) for r in range(12)}
+    g = ConquestPhase([0, 1], owner, lambda: FAKE_Q, 0.0, board=GRID, interlude=3)
+    g.bases = {0: 0, 1: 3}
+    g.select(0, 6)
+    g.tick(SELECT_SECONDS)
+    g.answer(0, WRONG, SELECT_SECONDS + 1)
+    g.answer(1, WRONG, SELECT_SECONDS + 2)
+    assert g.phase == "interlude"
+    assert g.public_state(1, SELECT_SECONDS + 2)["next"] == {"phase": "war_select", "attacker": 1}
+    g.tick(SELECT_SECONDS + 5)
+    assert g.phase == "war_select" and g.attacker == 1
+
+
+def test_no_pause_between_siege_questions():
+    owner = {r: (0 if r % 4 < 2 else 1) for r in range(12)}
+    owner[2] = 0
+    g = ConquestPhase([0, 1], owner, lambda: FAKE_Q, 0.0, board=GRID, interlude=3)
+    g.bases = {0: 0, 1: 3}
+    g.select(0, 3)
+    g.tick(SELECT_SECONDS)
+    g.answer(0, RIGHT, SELECT_SECONDS + 1)
+    g.answer(1, WRONG, SELECT_SECONDS + 1.5)                # both answered: no reveal wait
+    assert g.phase == "war_duel" and g.attack["tower_q"] == 2

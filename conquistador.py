@@ -9,6 +9,7 @@ from net.client import GameClient
 from net.discovery import RoomAnnouncer, RoomBrowser
 from net.server import GameServer
 from ui import scenes
+from ui.sound import Sounds
 from ui.widgets import HEIGHT, WIDTH
 
 
@@ -38,6 +39,7 @@ class App:
         self.scene_key = None
         self.scene = None
         self.popup = scenes.ResultPopup(self)
+        self.sound = Sounds()
 
     def _reset_session(self):
         self.you = None
@@ -157,9 +159,26 @@ class App:
             return "room"
         return self.state["phase"]
 
+    MENU_SCENES = ("name", "lobby", "settings", "room")
+
+    def your_move(self, key):
+        """True when the new scene asks this player to choose land."""
+        st = self.state or {}
+        if key == "pick":
+            return self.you in st.get("pickers", [])
+        if key == "grab_select":
+            return bool(st.get("selectable"))
+        if key == "war_select":
+            return st.get("attacker") == self.you
+        return False
+
     def update_scene(self):
         key = self.current_key()
         if key != self.scene_key:
+            if key == "interlude":
+                self.sound.play("bell")          # the riddle is done
+            elif self.your_move(key):
+                self.sound.play("horn")          # thy turn to choose
             self.scene_key = key
             self.scene = {
                 "name": scenes.NameEntry, "lobby": scenes.Lobby, "room": scenes.Room,
@@ -167,7 +186,7 @@ class App:
                 "pick": scenes.MapPick, "duel": scenes.Duel, "done": scenes.Done,
                 "grab_select": scenes.GrabSelect, "grab_question": scenes.GrabQuestion,
                 "war_select": scenes.WarSelect, "war_duel": scenes.WarDuel,
-                "over": scenes.GameOver,
+                "over": scenes.GameOver, "interlude": scenes.Interlude,
             }[key](self)
 
     def run(self):
@@ -177,15 +196,21 @@ class App:
             self.poll_network()
             self.update_scene()
             self.popup.update()
+            self.sound.lobby_music(self.scene_key in self.MENU_SCENES)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT or (
                         event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                     running = False
+                elif (event.type == pygame.KEYDOWN and event.key == pygame.K_m
+                      and not self.scene.typing()):
+                    self.sound.toggle_mute()
                 else:
                     self.scene.handle(event)
             self.update_scene()
             self.scene.draw(self.screen)
             self.popup.draw(self.screen, isinstance(self.scene, scenes.QuestionScene))
+            if self.scene_key in self.MENU_SCENES:
+                scenes.draw_mute_hint(self.screen, self.sound.muted)
             pygame.display.flip()
             clock.tick(60)
         self.leave()
@@ -194,6 +219,7 @@ class App:
 
 
 def main():
+    pygame.mixer.pre_init(22050, -16, 1, 512)    # matches the synthesized sounds
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Conquistador")

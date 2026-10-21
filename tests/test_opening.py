@@ -9,7 +9,7 @@ RIGHT, WRONG = 0, 1
 
 
 def make(players=(0, 1, 2), now=0.0, seed=1):
-    return OpeningPhase(list(players), lambda: FAKE_Q, now, rng=random.Random(seed))
+    return OpeningPhase(list(players), lambda: FAKE_Q, now, rng=random.Random(seed), interlude=0)
 
 
 def win(game, player, now):
@@ -249,3 +249,18 @@ def test_reveal_times_out():
     assert not g.tick(t + 1 + REVEAL_SECONDS - 0.1)
     assert g.tick(t + 1 + REVEAL_SECONDS)
     assert g.reveal is None and g.phase == "pick"
+
+
+def test_losers_get_a_pause_before_choosing_again():
+    g = OpeningPhase([0, 1], lambda: FAKE_Q, 0.0, rng=random.Random(1), interlude=3)
+    g.submit_pick(0, 4)
+    g.submit_pick(1, 4)
+    t = end_picks(g, 0)
+    g.answer_duel(0, RIGHT, t + 1)
+    g.answer_duel(1, WRONG, t + 1.5)              # both answered: the reveal ends
+    assert g.phase == "interlude"
+    assert g.public_state(1, t + 1.5)["next"] == {"phase": "pick", "pickers": [1]}
+    assert not g.submit_pick(1, 5)                # no choosing during the pause
+    assert g.tick(t + 4.5)
+    assert g.phase == "pick" and g.pickers == {1}
+    assert g.deadline == t + 4.5 + PICK_SECONDS

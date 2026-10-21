@@ -28,10 +28,22 @@ To play alone, click **Play vs bot**, then **Start**. The host can also use **Ad
 To try it on one machine, open several terminals and join `127.0.0.1`.
 macOS may ask to allow incoming connections for Python; allow it so others can join.
 
+## Sound
+
+- In the menus and halls a lute plays *Greensleeves* (a 16th-century tune in
+  the public domain), synthesized by the game itself in `ui/sound.py`.
+- During riddles a clock ticks each second, faster-sounding in the last three;
+  a bell rings when a riddle ends and a horn calls when it is your turn to
+  choose land.
+- Press `M` to mute or unmute.
+- To use your own lobby music, put a file at `assets/audio/lobby.ogg` (or
+  `.mp3` / `.wav`).
+
 ## Controls
 
 - Mouse: buttons and picking regions
 - `1`-`4`: answer a question
+- `M`: mute or unmute
 - `Esc`: quit
 
 ## Map data

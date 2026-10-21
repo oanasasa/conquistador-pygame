@@ -1,5 +1,7 @@
 """One scene per screen. Scenes read shared state from the App and send
 player actions through it; they never judge answers themselves."""
+import math
+
 import pygame
 
 from net import opentdb, protocol
@@ -21,6 +23,13 @@ ON_PARCHMENT = {YELLOW: (128, 80, 16), GRAY: INK_SOFT, RED_TEXT: (150, 40, 30),
                 GREEN_TEXT: (60, 100, 40), WHITE: INK}
 
 
+def draw_mute_hint(screen, muted):
+    """Top-right reminder of the mute key, in the menus."""
+    label = "M: let the minstrels play" if muted else "M: silence the minstrels"
+    text(screen, label, (WIDTH - MARGIN - font(20, italic=True).size(label)[0], 6), GRAY,
+         size=20, italic=True)
+
+
 def flourish(screen, center, width, color=GOLD):
     """A decorative rule with a diamond in the middle, for titles."""
     x, y = center
@@ -39,6 +48,10 @@ class Scene:
     def draw(self, screen):
         pass
 
+    def typing(self):
+        """True while a text field has focus (so letter keys are text, not shortcuts)."""
+        return False
+
     def draw_error(self, screen):
         if self.app.error:
             text(screen, self.app.error, (MARGIN, HEIGHT - 34), RED_TEXT, size=26)
@@ -49,6 +62,9 @@ class NameEntry(Scene):
         super().__init__(app)
         self.input = TextInput((WIDTH // 2 - 160, 300, 320, 46), placeholder="thy name")
         self.ok = Button((WIDTH // 2 - 90, 372, 180, 46), "Onward")
+
+    def typing(self):
+        return True
 
     def handle(self, event):
         entered = self.input.handle(event) or self.ok.clicked(event)
@@ -82,6 +98,9 @@ class Lobby(Scene):
         self.ip.active = False
         self.join_ip = Button((MARGIN + 316, HEIGHT - 96, 150, 46), "Seek")
         self.room_buttons = []
+
+    def typing(self):
+        return self.ip.active
 
     def handle(self, event):
         if self.create.clicked(event):
@@ -292,9 +311,10 @@ class Room(Scene):
         p = draw_panel(screen, (600, 110, WIDTH - MARGIN - 600, 280), header="The riddles")
         x, y = p.x + 22, p.y + 60
         category = info.get("category")
-        for line in wrap_text(category or "The realm's own riddles", 28, p.w - 60, bold=True):
-            pygame.draw.polygon(screen, OXBLOOD, [(x, y + 10), (x + 6, y + 4), (x + 12, y + 10),
-                                                  (x + 6, y + 16)])
+        lines = wrap_text(category or "The realm's own riddles", 28, p.w - 60, bold=True)
+        pygame.draw.polygon(screen, OXBLOOD, [(x, y + 10), (x + 6, y + 4), (x + 12, y + 10),
+                                              (x + 6, y + 16)])
+        for line in lines:
             text(screen, line, (x + 22, y), INK, size=28, bold=True)
             y += 30
         if category:
@@ -440,6 +460,18 @@ class QuestionScene(Scene):
     def can_answer(self):
         return self.may_answer() and self.app.answered_q != self.app.question_token()
 
+    def revealing(self):
+        """True while a won duel question stays open for the others."""
+        return False
+
+    def tick_clock(self):
+        """A tick each second the riddle is open; sharper in the last three."""
+        second = math.ceil(self.app.remaining())
+        if second != getattr(self, "last_second", None):
+            self.last_second = second
+            if 0 < second and not self.revealing():
+                self.app.sound.play("tick_urgent" if second <= 3 else "tick")
+
     def reveal_status(self, info):
         """Status while a won question stays open for the others."""
         res = self.app.state.get("last_result") or {}
@@ -471,6 +503,8 @@ class QuestionScene(Scene):
             self.token = token
             self.shown_at = pygame.time.get_ticks()
             self.total = max(self.app.remaining(), 1.0)
+            self.last_second = None
+        self.tick_clock()
         progress = min(1.0, (pygame.time.get_ticks() - self.shown_at) / self.POP_MS)
 
         draw_background(screen)
@@ -565,6 +599,9 @@ class QuestionScene(Scene):
 class Duel(QuestionScene):
     """Opening bonus question for a contested region. Quickest correct answer
     wins. Players not in the duel watch but cannot answer."""
+
+    def revealing(self):
+        return self.app.state["duel"]["reveal"]
 
     def question(self):
         return self.app.state["duel"]["question"]
@@ -726,6 +763,9 @@ class WarSelect(Scene):
 class WarDuel(QuestionScene):
     """Attacker vs defender; quickest correct answer wins. Others watch."""
 
+    def revealing(self):
+        return self.app.state["attack"]["reveal"]
+
     def question(self):
         return self.app.state["question"]
 
@@ -794,6 +834,95 @@ class GameOver(Scene):
         conquest_board(screen, self.app)
 
 
+class Interlude(Scene):
+    """A short pause after a riddle: what happened, who answered how fast, and
+    what comes next. The next selection timer starts only after it."""
+
+    POP_MS = 260
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.shown_at = pygame.time.get_ticks()
+        self.total = max(app.remaining(), 1.0)
+
+    def heading(self, res):
+        kind = (res or {}).get("kind")
+        if kind is None:
+            return "The duel is done"
+        if kind == "grab":
+            return "The riddle is done"
+        if kind == "skip":
+            return "A turn passeth"
+        if res.get("base_fell"):
+            return "A castle hath fallen!"
+        return "The siege goeth on" if res.get("base") else "The battle is done"
+
+    def what_next(self):
+        nxt = self.app.state.get("next") or {}
+        me, name = self.app.you, self.app.player_name
+        phase = nxt.get("phase")
+        if phase == "grab_select":
+            return "Make ready to choose thy next land!"
+        if phase == "war_select":
+            if nxt.get("attacker") == me:
+                return "Thy turn to march cometh! Make ready."
+            return f"{name(nxt.get('attacker'))} shall march next."
+        if phase == "pick":
+            pickers = nxt.get("pickers", [])
+            if me in pickers:
+                return "Thou must choose a new homeland!"
+            return f"{', '.join(name(p) for p in pickers)} must choose anew."
+        return "The war draweth to its end..."
+
+    def draw(self, screen):
+        st = self.app.state
+        draw_background(screen)
+        if st.get("stage") == "conquest":
+            conquest_board(screen, self.app)
+        else:
+            draw_board(screen, owner_map(st))
+        progress = min(1.0, (pygame.time.get_ticks() - self.shown_at) / self.POP_MS)
+        dim(screen, 130 * progress)
+        text(screen, "Hold! Take stock ere the next move", (MARGIN, 15), GOLD, size=36, bold=True)
+        text(screen, self.what_next(), (MARGIN, 60), GRAY, size=26, italic=True)
+        draw_timer(screen, self.app)
+
+        res = st.get("last_result")
+        w = 600
+        lines = wrap_text(result_line(self.app) or "", 30, w - 60, bold=True)
+        rows = answer_rows(res) if res else []
+        nxt = self.what_next()
+        h = 64 + len(lines) * 32 + (14 + len(rows) * 34 if rows else 0) + 104
+        card = pygame.Surface((w + 8, h + 8), pygame.SRCALPHA)
+        draw_panel(card, (0, 0, w, h), header=self.heading(res), header_h=44)
+        y = 60
+        for line in lines:
+            text(card, line, (30, y), INK, size=30, bold=True)
+            y += 32
+        if rows:
+            y += 14
+            for player, correct, detail in rows:
+                draw_mark(card, (40, y + 12), correct)
+                r = text(card, self.app.player_name(player), (60, y), INK, size=28, bold=True)
+                draw_shield(card, (r.right + 14, y + 12), PLAYER_COLORS[player], size=7)
+                text(card, detail, (r.right + 30, y + 3), INK_SOFT, size=26, italic=True)
+                y += 34
+        y += 12
+        flourish(card, (w // 2, y), w - 120, INK_SOFT)
+        text(card, nxt, (w // 2, y + 26), (128, 80, 16), size=30, center=True, bold=True)
+        bar = pygame.Rect(30, h - 30, w - 60, 8)
+        fraction = max(0.0, min(1.0, self.app.remaining() / self.total))
+        pygame.draw.rect(card, (186, 160, 116), bar)
+        pygame.draw.rect(card, OXBLOOD, (bar.x, bar.y, int(bar.w * fraction), bar.h))
+        pygame.draw.rect(card, INK_SOFT, bar, 1)
+
+        scale = 0.8 + 0.2 * ease_out_back(progress)
+        if scale != 1.0:
+            card = pygame.transform.smoothscale(
+                card, (int(card.get_width() * scale), int(card.get_height() * scale)))
+        screen.blit(card, card.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 20)))
+
+
 # ---- result popup ------------------------------------------------------------
 
 def answer_rows(res):
@@ -845,8 +974,8 @@ class ResultPopup:
         return self.key is not None and pygame.time.get_ticks() - self.shown_at < self.SHOW_MS
 
     def draw(self, screen, compact):
-        if not self.visible():
-            return
+        if not self.visible() or self.app.scene_key == "interlude":
+            return                          # the interlude card already shows it
         res = self.result()
         title = result_line(self.app) or ""
         rows = answer_rows(res)

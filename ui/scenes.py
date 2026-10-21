@@ -3,12 +3,30 @@ player actions through it; they never judge answers themselves."""
 import pygame
 
 from net import protocol
-from ui.widgets import (BG, BOARD_TOP, GRAY, HEIGHT, MARGIN, PLAYER_COLORS, WHITE, WIDTH,
-                        Button, TextInput, dim, draw_board, draw_card, draw_mark,
-                        ease_out_back, region_at, region_name, text, timer_color,
-                        wrap_text)
+from ui.widgets import (BOARD_TOP, GOLD, GRAY, HEIGHT, INK, INK_SOFT, MARGIN, PARCH_DARK,
+                        PLAYER_COLORS, WHITE, WIDTH, WOOD_GREEN, WOOD_RED, Button, TextInput,
+                        dim, draw_background, draw_board, draw_mark, draw_panel, draw_seal,
+                        draw_shield, ease_out_back, leather, region_at, region_name, text,
+                        timer_color, wrap_text)
+from ui.widgets import draw_timer as timer_ring
 
 ANSWER_KEYS = [pygame.K_1, pygame.K_2, pygame.K_3]
+
+# Text colors on the leather background
+YELLOW = GOLD
+RED_TEXT = (226, 122, 98)
+GREEN_TEXT = (164, 204, 120)
+# The same meanings, darker, for text on parchment
+ON_PARCHMENT = {YELLOW: (128, 80, 16), GRAY: INK_SOFT, RED_TEXT: (150, 40, 30),
+                GREEN_TEXT: (60, 100, 40), WHITE: INK}
+
+
+def flourish(screen, center, width, color=GOLD):
+    """A decorative rule with a diamond in the middle, for titles."""
+    x, y = center
+    pygame.draw.line(screen, color, (x - width // 2, y), (x - 10, y), 1)
+    pygame.draw.line(screen, color, (x + 10, y), (x + width // 2, y), 1)
+    pygame.draw.polygon(screen, color, [(x - 6, y), (x, y - 5), (x + 6, y), (x, y + 5)])
 
 
 class Scene:
@@ -23,14 +41,14 @@ class Scene:
 
     def draw_error(self, screen):
         if self.app.error:
-            text(screen, self.app.error, (MARGIN, HEIGHT - 40), (255, 120, 120), size=26)
+            text(screen, self.app.error, (MARGIN, HEIGHT - 34), RED_TEXT, size=26)
 
 
 class NameEntry(Scene):
     def __init__(self, app):
         super().__init__(app)
-        self.input = TextInput((WIDTH // 2 - 160, 260, 320, 44), placeholder="your name")
-        self.ok = Button((WIDTH // 2 - 80, 330, 160, 44), "Continue")
+        self.input = TextInput((WIDTH // 2 - 160, 300, 320, 46), placeholder="your name")
+        self.ok = Button((WIDTH // 2 - 90, 372, 180, 46), "Continue")
 
     def handle(self, event):
         entered = self.input.handle(event) or self.ok.clicked(event)
@@ -38,12 +56,16 @@ class NameEntry(Scene):
             self.app.set_name(self.input.value.strip())
 
     def draw(self, screen):
-        screen.fill(BG)
-        text(screen, "CONQUISTADOR", (WIDTH // 2, 140), size=64, center=True)
-        text(screen, "Choose a username", (WIDTH // 2, 220), GRAY, center=True)
+        draw_background(screen)
+        text(screen, "Conquistador", (WIDTH // 2, 110), GOLD, size=86, center=True, bold=True)
+        flourish(screen, (WIDTH // 2, 158), 420)
+        text(screen, "A game of wits and conquest", (WIDTH // 2, 184), GRAY, size=30,
+             center=True, italic=True)
+        draw_panel(screen, (WIDTH // 2 - 200, 222, 400, 220), header="Who rides to battle?")
+        text(screen, "Choose your name", (WIDTH // 2 - 160, 274), INK_SOFT, size=26, italic=True)
         self.ok.enabled = bool(self.input.value.strip())
         self.input.draw(screen)
-        self.ok.draw(screen)
+        self.ok.draw(screen, WOOD_GREEN)
 
 
 class Lobby(Scene):
@@ -51,12 +73,12 @@ class Lobby(Scene):
 
     def __init__(self, app):
         super().__init__(app)
-        self.create = Button((MARGIN, 90, 220, 44), "Create room")
-        self.solo = Button((MARGIN + 240, 90, 220, 44), "Play vs bot")
-        self.ip = TextInput((MARGIN, HEIGHT - 120, 260, 44), placeholder="host IP, e.g. 192.168.1.5",
+        self.create = Button((MARGIN, 84, 220, 46), "Create room")
+        self.solo = Button((MARGIN + 240, 84, 220, 46), "Play vs bot")
+        self.ip = TextInput((MARGIN, HEIGHT - 96, 300, 46), placeholder="host IP, e.g. 192.168.1.5",
                             max_len=40)
         self.ip.active = False
-        self.join_ip = Button((MARGIN + 270, HEIGHT - 120, 140, 44), "Join IP")
+        self.join_ip = Button((MARGIN + 316, HEIGHT - 96, 150, 46), "Join IP")
         self.room_buttons = []
 
     def handle(self, event):
@@ -75,29 +97,33 @@ class Lobby(Scene):
                 return
 
     def draw(self, screen):
-        screen.fill(BG)
-        text(screen, f"Hi {self.app.name}!", (MARGIN, 20), size=42)
+        draw_background(screen)
+        text(screen, f"Hail, {self.app.name}!", (MARGIN, 18), GOLD, size=48, bold=True)
         self.create.draw(screen)
-        self.solo.draw(screen, (60, 140, 80))
-        text(screen, "Rooms on your network:", (MARGIN, 160), GRAY)
+        self.solo.draw(screen, WOOD_GREEN)
+        panel = draw_panel(screen, (MARGIN, 152, WIDTH - 2 * MARGIN, 290),
+                           header="Rooms on your network")
         rooms = self.app.browser.list_rooms() if self.app.browser else []
         self.room_buttons = []
         if not rooms:
-            text(screen, "No rooms found yet...", (MARGIN + 20, 200), GRAY, size=26)
-        for i, room in enumerate(rooms[:5]):
-            y = 195 + i * 50
+            text(screen, "No rooms found yet... create one, or ask the host for their IP.",
+                 (panel.x + 24, panel.y + 66), INK_SOFT, size=26, italic=True)
+        for i, room in enumerate(rooms[:4]):
+            y = panel.y + 56 + i * 54
             full = room["players"] >= room["max"]
-            text(screen, f"{room['room']}  ({room['ip']})  {room['players']}/{room['max']}",
-                 (MARGIN + 20, y + 10))
-            b = Button((WIDTH - MARGIN - 120, y, 120, 40), "Full" if full else "Join", not full)
+            text(screen, room["room"], (panel.x + 24, y + 8), INK, size=30, bold=True)
+            text(screen, f"{room['ip']}   ·   {room['players']}/{room['max']} players",
+                 (panel.x + 300, y + 12), INK_SOFT, size=24, italic=True)
+            b = Button((panel.right - 150, y, 126, 42), "Full" if full else "Join", not full)
             b.draw(screen)
             self.room_buttons.append((b, room))
-        text(screen, "Or join by IP:", (MARGIN, HEIGHT - 150), GRAY, size=26)
+            pygame.draw.line(screen, PARCH_DARK, (panel.x + 20, y + 50), (panel.right - 20, y + 50), 1)
+        text(screen, "Or join by IP:", (MARGIN, HEIGHT - 128), GRAY, size=26, italic=True)
         self.ip.draw(screen)
         self.join_ip.enabled = bool(self.ip.value.strip())
         self.join_ip.draw(screen)
         if self.app.local_ip:
-            text(screen, f"Your IP: {self.app.local_ip}", (WIDTH - 260, HEIGHT - 110), GRAY, size=26)
+            text(screen, f"Your IP: {self.app.local_ip}", (WIDTH - 250, HEIGHT - 84), GRAY, size=26)
         self.draw_error(screen)
 
 
@@ -106,31 +132,36 @@ class Room(Scene):
 
     def __init__(self, app):
         super().__init__(app)
-        self.start = Button((MARGIN, 400, 200, 50), "Start")
-        self.leave = Button((MARGIN + 220, 400, 160, 50), "Leave")
-        self.add_bot = Button((MARGIN + 400, 400, 160, 50), "Add bot")
-        self.remove_bot = Button((MARGIN + 580, 400, 180, 50), "Remove bot")
+        y = 420
+        self.start = Button((MARGIN, y, 190, 50), "Start")
+        self.add_bot = Button((MARGIN + 206, y, 170, 50), "Add bot")
+        self.remove_bot = Button((MARGIN + 392, y, 190, 50), "Remove bot")
+        self.leave = Button((WIDTH - MARGIN - 160, y, 160, 50), "Leave")
 
     def handle(self, event):
-        if self.start.clicked(event):
+        lobby = self.app.lobby or {}
+        is_host = self.app.you is not None and self.app.you == lobby.get("host")
+        if is_host and self.start.clicked(event):
             self.app.send({"t": "start"})
         elif self.leave.clicked(event):
             self.app.leave()
-        elif self.add_bot.clicked(event):
+        elif is_host and self.add_bot.clicked(event):
             self.app.send({"t": "add_bot"})
-        elif self.remove_bot.clicked(event):
+        elif is_host and self.remove_bot.clicked(event):
             self.app.send({"t": "remove_bot"})
 
     def draw(self, screen):
-        screen.fill(BG)
+        draw_background(screen)
         lobby = self.app.lobby or {}
-        text(screen, lobby.get("room", "Connecting..."), (MARGIN, 20), size=48)
+        text(screen, lobby.get("room", "Connecting..."), (MARGIN, 18), GOLD, size=52, bold=True)
         if self.app.server:
-            text(screen, f"Others can join at {self.app.local_ip}", (MARGIN, 70), GRAY, size=26)
+            text(screen, f"Others can join at {self.app.local_ip}", (MARGIN, 70), GRAY, size=26,
+                 italic=True)
+        panel = draw_panel(screen, (MARGIN, 110, 560, 280), header="The company")
         players = lobby.get("players", [])
         for i, p in enumerate(players):
-            y = 120 + i * 50
-            pygame.draw.rect(screen, PLAYER_COLORS[p["id"]], (MARGIN, y, 36, 36), border_radius=6)
+            y = panel.y + 66 + i * 62
+            draw_shield(screen, (panel.x + 40, y + 14), PLAYER_COLORS[p["id"]], size=14)
             tag = []
             if p["id"] == lobby.get("host"):
                 tag.append("host")
@@ -138,28 +169,28 @@ class Room(Scene):
                 tag.append("you")
             if p.get("bot"):
                 tag.append("computer")
-            label = p["name"] + (f"  ({', '.join(tag)})" if tag else "")
-            text(screen, label, (MARGIN + 50, y + 8))
+            r = text(screen, p["name"], (panel.x + 72, y), INK, size=34, bold=True)
+            if tag:
+                text(screen, ", ".join(tag), (r.right + 14, y + 8), INK_SOFT, size=24, italic=True)
+        for i in range(len(players), protocol.MAX_PLAYERS):
+            y = panel.y + 66 + i * 62
+            text(screen, "an empty seat...", (panel.x + 72, y + 4), PARCH_DARK, size=28, italic=True)
         is_host = self.app.you is not None and self.app.you == lobby.get("host")
         if is_host:
             self.start.enabled = len(players) >= protocol.MIN_PLAYERS
-            self.start.draw(screen, (60, 140, 80))
+            self.start.draw(screen, WOOD_GREEN)
             self.add_bot.enabled = len(players) < protocol.MAX_PLAYERS
             self.add_bot.draw(screen)
             self.remove_bot.enabled = any(p.get("bot") for p in players)
             self.remove_bot.draw(screen)
             if not self.start.enabled:
                 text(screen, "Waiting for another player, or add a bot to play alone.",
-                     (MARGIN, 470), GRAY, size=26)
+                     (MARGIN, 486), GRAY, size=26, italic=True)
         else:
-            text(screen, "Waiting for the host to start...", (MARGIN, 470), GRAY, size=26)
-        self.leave.draw(screen, (120, 70, 70))
+            text(screen, "Waiting for the host to start...", (MARGIN, 486), GRAY, size=26,
+                 italic=True)
+        self.leave.draw(screen, WOOD_RED)
         self.draw_error(screen)
-
-
-YELLOW = (255, 210, 60)
-RED_TEXT = (255, 120, 120)
-GREEN_TEXT = (110, 220, 140)
 
 
 def result_line(app):
@@ -202,8 +233,8 @@ def bases_map(state):
     return {r: towers.get(p, 0) for p, r in state.get("bases", {}).items()}
 
 
-def draw_timer(screen, app, size=48):
-    text(screen, f"{app.remaining():0.0f}s", (WIDTH - MARGIN - 70, 15), WHITE, size=size)
+def draw_timer(screen, app):
+    timer_ring(screen, app.remaining())
 
 
 def draw_result(screen, app, y=100):
@@ -227,17 +258,19 @@ class MapPick(Scene):
 
     def draw(self, screen):
         st = self.app.state
-        screen.fill(BG)
+        draw_background(screen)
         me = self.app.you
         if me in st["pickers"]:
-            text(screen, "Pick your starting region!", (MARGIN, 15), PLAYER_COLORS[me], size=42)
+            text(screen, "Pick your starting region!", (MARGIN, 15), PLAYER_COLORS[me], size=42,
+                 bold=True)
             hint = ("Picks are secret. The round ends when everyone has picked."
                     if st["your_pick"] is None else
                     f"You picked {region_name(st['your_pick'])}. Waiting for the others...")
             text(screen, hint, (MARGIN, 60), GRAY, size=26)
         else:
             names = ", ".join(self.app.player_name(p) for p in st["pickers"])
-            text(screen, f"Waiting for {names} to pick a region...", (MARGIN, 15), size=36)
+            text(screen, f"Waiting for {names} to pick a region...", (MARGIN, 15), size=36,
+                 bold=True)
         draw_timer(screen, self.app)
         draw_result(screen, self.app)
         draw_board(screen, owner_map(st), my_pick=st["your_pick"],
@@ -316,8 +349,8 @@ class QuestionScene(Scene):
             self.total = max(self.app.remaining(), 1.0)
         progress = min(1.0, (pygame.time.get_ticks() - self.shown_at) / self.POP_MS)
 
-        screen.fill(BG)
-        text(screen, self.title(), (MARGIN, 20), size=36)
+        draw_background(screen)
+        text(screen, self.title(), (MARGIN, 20), size=36, bold=True)
         self.draw_map(screen)
         dim(screen, 175 * min(1.0, progress * 1.5))
 
@@ -329,80 +362,72 @@ class QuestionScene(Scene):
         screen.blit(card, card.get_rect(center=self.card.center))
 
     def render_card(self):
+        """The question on a parchment sheet with an oxblood ribbon header."""
         q = self.question()
         w = self.CARD_W
-        lines = wrap_text(q["q"], 34, w - 48)
-        choices_top = 64 + len(lines) * 36 + 14
-        h = choices_top + len(q["choices"]) * 54 + 64
+        lines = wrap_text(q["q"], 36, w - 56)
+        choices_top = 70 + len(lines) * 36 + 14
+        h = choices_top + len(q["choices"]) * 56 + 66
         self.card = pygame.Rect(0, 0, w, h)
         self.card.center = (WIDTH // 2, HEIGHT // 2 + 30)
-        surf = pygame.Surface((w, h), pygame.SRCALPHA)
-        accent = YELLOW
-
-        draw_card(surf, surf.get_rect(), accent)
-        pygame.draw.rect(surf, accent, (0, 0, w, 48),
-                         border_top_left_radius=14, border_top_right_radius=14)
-        text(surf, self.title_band(), (20, 14), (30, 30, 40), size=28)
-        self.draw_players(surf, w - 20, 24)
+        surf = pygame.Surface((w + 8, h + 8), pygame.SRCALPHA)   # room for the shadow
+        draw_panel(surf, (0, 0, w, h), header=self.title(), header_h=44)
+        self.draw_players(surf, w - 22, 25)
 
         for i, line in enumerate(lines):
-            text(surf, line, (24, 62 + i * 36), WHITE, size=34)
+            text(surf, line, (28, 64 + i * 36), INK, size=36, bold=True)
 
         active = self.can_answer()
         mine = self.app.answered_choice if self.app.answered_q == self.app.question_token() else None
         mouse = pygame.mouse.get_pos()
         self.choice_rects = []
         for i, choice in enumerate(q["choices"]):
-            local = pygame.Rect(24, choices_top + i * 54, w - 48, 44)
+            local = pygame.Rect(28, choices_top + i * 56, w - 56, 46)
             screen_rect = local.move(self.card.topleft)
             self.choice_rects.append(screen_rect)
             if i == mine:
-                fill = (95, 115, 180)
+                fill, ink = (196, 160, 98), INK
             elif active:
-                fill = (80, 100, 155) if screen_rect.collidepoint(mouse) else (64, 80, 125)
+                fill = (224, 204, 160) if screen_rect.collidepoint(mouse) else PARCH_DARK
+                ink = INK
             else:
-                fill = (58, 60, 78)
-            pygame.draw.rect(surf, fill, local, border_radius=8)
-            if i == mine:
-                pygame.draw.rect(surf, WHITE, local, 3, border_radius=8)
-            badge = pygame.Rect(local.x + 8, local.y + 7, 30, 30)
-            pygame.draw.rect(surf, (225, 225, 235) if active or i == mine else GRAY, badge,
-                             border_radius=6)
-            text(surf, str(i + 1), badge.center, (30, 30, 40), size=26, center=True)
-            text(surf, choice, (local.x + 52, local.y + 11), WHITE if active or i == mine else GRAY,
-                 size=30)
+                fill, ink = (214, 198, 164), (150, 128, 96)
+            pygame.draw.rect(surf, fill, local, border_radius=4)
+            pygame.draw.rect(surf, INK if i == mine else INK_SOFT, local, 3 if i == mine else 1,
+                             border_radius=4)
+            draw_seal(surf, (local.x + 24, local.centery), str(i + 1), r=15,
+                      color=(150, 36, 30) if active or i == mine else (158, 120, 104))
+            text(surf, choice, (local.x + 52, local.y + 10), ink, size=32)
 
-        bar_y = choices_top + len(q["choices"]) * 54 + 4
-        bar = pygame.Rect(24, bar_y, w - 48, 10)
+        bar_y = choices_top + len(q["choices"]) * 56 + 4
+        bar = pygame.Rect(28, bar_y, w - 56, 10)
         fraction = max(0.0, min(1.0, self.app.remaining() / self.total))
-        pygame.draw.rect(surf, (30, 30, 40), bar, border_radius=5)
-        pygame.draw.rect(surf, timer_color(fraction), (bar.x, bar.y, int(bar.w * fraction), bar.h),
-                         border_radius=5)
-        text(surf, f"{self.app.remaining():0.0f}s", (bar.right - 30, bar_y + 18), GRAY, size=24)
+        pygame.draw.rect(surf, (186, 160, 116), bar)
+        pygame.draw.rect(surf, timer_color(fraction), (bar.x, bar.y, int(bar.w * fraction), bar.h))
+        pygame.draw.rect(surf, INK_SOFT, bar, 1)
+        text(surf, f"{self.app.remaining():0.0f}s", (bar.right - 30, bar_y + 18), INK_SOFT, size=26,
+             bold=True)
 
         msg, color = self.status()
-        text(surf, msg, (24, bar_y + 18), color, size=24)
+        text(surf, msg, (28, bar_y + 18), ON_PARCHMENT.get(color, INK), size=26, italic=True)
         return surf
 
-    def title_band(self):
-        return self.title().upper()
-
     def draw_players(self, surf, right, cy):
-        """Colored name chips, right-aligned in the header band."""
+        """Heraldic shields and names, right-aligned in the ribbon."""
         x = right
-        for i, p in enumerate(reversed(self.players())):
+        players = self.players()
+        for i, p in enumerate(reversed(players)):
             name = self.app.player_name(p)
-            r = text(surf, name, (0, -100), size=26)          # measure only
+            r = text(surf, name, (0, -100), size=26, bold=True)        # measure only
             x -= r.width
-            text(surf, name, (x, cy - r.height // 2), (30, 30, 40), size=26)
+            text(surf, name, (x, cy - r.height // 2), WHITE, size=26, bold=True)
             x -= 16
-            pygame.draw.circle(surf, PLAYER_COLORS[p], (x + 6, cy), 8)
-            pygame.draw.circle(surf, (30, 30, 40), (x + 6, cy), 8, 2)
-            x -= 14
-            if i < len(self.players()) - 1:
-                vs = text(surf, self.joiner, (0, -100), size=22)
-                x -= vs.width + 4
-                text(surf, self.joiner, (x, cy - vs.height // 2), (30, 30, 40), size=22)
+            draw_shield(surf, (x + 4, cy - 2), PLAYER_COLORS[p], size=8)
+            x -= 16
+            if i < len(players) - 1:
+                vs = text(surf, self.joiner, (0, -100), size=24, italic=True)
+                x -= vs.width + 2
+                text(surf, self.joiner, (x, cy - vs.height // 2), GOLD, size=24, italic=True)
                 x -= 12
 
 
@@ -446,8 +471,8 @@ class Duel(QuestionScene):
 class Done(Scene):
     def draw(self, screen):
         st = self.app.state
-        screen.fill(BG)
-        text(screen, "Starting regions are set!", (MARGIN, 15), size=42)
+        draw_background(screen)
+        text(screen, "Starting regions are set!", (MARGIN, 15), size=42, bold=True)
         owners = owner_map(st)
         parts = [f"{self.app.player_name(p)}: {region_name(r)}"
                  for r, p in sorted(owners.items(), key=lambda kv: kv[1])]
@@ -476,16 +501,16 @@ class GrabSelect(Scene):
     def draw(self, screen):
         st = self.app.state
         me = self.app.you
-        screen.fill(BG)
+        draw_background(screen)
         mine = st["selections"].get(str(me))
         if st["selectable"] or mine is not None:
             text(screen, "Land grab: choose a free region next to your land",
-                 (MARGIN, 15), PLAYER_COLORS[me], size=36)
+                 (MARGIN, 15), PLAYER_COLORS[me], size=36, bold=True)
             hint = ("Hatched lands are locked by other players. You can change your choice."
                     if mine is None else
                     f"You chose {region_name(mine)}. A question follows when the time is up.")
         else:
-            text(screen, "Land grab", (MARGIN, 15), size=36)
+            text(screen, "Land grab", (MARGIN, 15), size=36, bold=True)
             hint = "No free region next to your land. Waiting for the others..."
         text(screen, hint, (MARGIN, 60), GRAY, size=26)
         draw_timer(screen, self.app)
@@ -550,15 +575,15 @@ class WarSelect(Scene):
         me = self.app.you
         attacker = st["attacker"]
         target = st["selections"].get(str(attacker))
-        screen.fill(BG)
+        draw_background(screen)
         if attacker == me:
             text(screen, "Your turn: attack a region next to your land",
-                 (MARGIN, 15), PLAYER_COLORS[me], size=36)
+                 (MARGIN, 15), PLAYER_COLORS[me], size=36, bold=True)
             hint = ("Attacking a base starts a 3-tower siege." if target is None else
                     f"Target: {region_name(target)}. You can change it until the time is up.")
         else:
             text(screen, f"{self.app.player_name(attacker)} is choosing a target...",
-                 (MARGIN, 15), PLAYER_COLORS[attacker], size=36)
+                 (MARGIN, 15), PLAYER_COLORS[attacker], size=36, bold=True)
             hint = ("" if target is None else
                     f"Target: {region_name(target)} ({self.app.player_name(owner_map(st)[target])})")
         text(screen, hint, (MARGIN, 60), GRAY, size=26)
@@ -617,7 +642,7 @@ class WarDuel(QuestionScene):
 class GameOver(Scene):
     def __init__(self, app):
         super().__init__(app)
-        self.leave = Button((WIDTH - MARGIN - 200, 60, 200, 44), "Back to lobby")
+        self.leave = Button((WIDTH - MARGIN - 200, 22, 200, 46), "Back to lobby")
 
     def handle(self, event):
         if self.leave.clicked(event):
@@ -626,14 +651,15 @@ class GameOver(Scene):
     def draw(self, screen):
         st = self.app.state
         winner = st["winner"]
-        screen.fill(BG)
+        draw_background(screen)
         if winner is None:
-            text(screen, "Game over", (MARGIN, 15), size=48)
+            text(screen, "Game over", (MARGIN, 14), GOLD, size=52, bold=True)
         else:
-            text(screen, f"{self.app.player_name(winner)} conquers the map!", (MARGIN, 15),
-                 PLAYER_COLORS[winner], size=48)
-        draw_result(screen, self.app, y=70)
-        self.leave.draw(screen)
+            text(screen, f"{self.app.player_name(winner)} conquers the realm!", (MARGIN, 14),
+                 PLAYER_COLORS[winner], size=52, bold=True)
+        flourish(screen, (MARGIN + 260, 76), 520)
+        draw_result(screen, self.app)
+        self.leave.draw(screen, WOOD_RED)
         conquest_board(screen, self.app)
 
 
@@ -702,15 +728,15 @@ class ResultPopup:
     def draw_banner(self, screen, title, rows, progress):
         parts = [title] + [f"{self.app.player_name(p)}: {d}" for p, _, d in rows]
         line = "   ".join(parts)
-        rect = pygame.Rect(MARGIN, 0, WIDTH - 2 * MARGIN, 40)
-        rect.y = int(-40 + 48 * ease_out_back(progress))
-        draw_card(screen, rect, YELLOW, radius=10)
-        text(screen, wrap_text(line, 24, rect.w - 24)[0], (rect.x + 12, rect.y + 12), WHITE, size=24)
+        rect = pygame.Rect(MARGIN, 0, WIDTH - 2 * MARGIN, 42)
+        rect.y = int(-42 + 52 * ease_out_back(progress))
+        draw_panel(screen, rect)
+        text(screen, wrap_text(line, 24, rect.w - 32)[0], (rect.x + 16, rect.y + 11), INK, size=24)
 
     def draw_header(self, screen, title, rows, progress):
         """Result in the strip between the scene title and the map."""
         strip = pygame.Rect(0, 90, WIDTH, BOARD_TOP - 92)
-        pygame.draw.rect(screen, BG, strip)                    # replaces the plain result line
+        screen.blit(leather(), strip, strip)                   # replaces the plain result line
         slide = int(-30 * (1 - ease_out_back(progress)))
         x = MARGIN + slide
         pygame.draw.rect(screen, YELLOW, (x, strip.y + 4, 4, strip.h - 8), border_radius=2)

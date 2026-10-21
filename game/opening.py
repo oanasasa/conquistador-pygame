@@ -5,7 +5,7 @@ Pure game logic with no pygame and no sockets. Times are passed in as `now`
 """
 import random
 
-from game.board import NUM_REGIONS
+from game.board import default_board
 from game.questions import REVEAL_SECONDS, Reveal, public_view
 
 PICK_SECONDS = 15
@@ -31,10 +31,11 @@ class Duel:
 
 
 class OpeningPhase:
-    def __init__(self, players, next_question, now, num_regions=NUM_REGIONS, rng=None):
+    def __init__(self, players, next_question, now, board=None, rng=None):
         self.players = list(players)
         self.next_question = next_question   # callable returning a question dict
-        self.num_regions = num_regions
+        self.board = board or default_board()
+        self.num_regions = self.board.num_regions
         self.rng = rng or random.Random()
         self.owner = {}            # region -> player
         self.picks = {}            # player -> region, current pick round only

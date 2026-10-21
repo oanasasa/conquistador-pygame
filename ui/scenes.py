@@ -6,11 +6,11 @@ from net import protocol
 from ui.widgets import (BOARD_TOP, GOLD, GRAY, HEIGHT, INK, INK_SOFT, MARGIN, PARCH_DARK,
                         PLAYER_COLORS, WHITE, WIDTH, WOOD_GREEN, WOOD_RED, Button, TextInput,
                         dim, draw_background, draw_board, draw_mark, draw_panel, draw_seal,
-                        draw_shield, ease_out_back, leather, region_at, region_name, text,
-                        timer_color, wrap_text)
+                        draw_shield, ease_out_back, fit_text, font, leather, region_at,
+                        region_name, text, timer_color, wrap_text)
 from ui.widgets import draw_timer as timer_ring
 
-ANSWER_KEYS = [pygame.K_1, pygame.K_2, pygame.K_3]
+ANSWER_KEYS = [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4]
 
 # Text colors on the leather background
 YELLOW = GOLD
@@ -66,6 +66,8 @@ class NameEntry(Scene):
         self.ok.enabled = bool(self.input.value.strip())
         self.input.draw(screen)
         self.ok.draw(screen, WOOD_GREEN)
+        text(screen, "Questions from the Open Trivia Database (opentdb.com), CC BY-SA 4.0",
+             (WIDTH // 2, HEIGHT - 24), GRAY, size=22, center=True, italic=True)
 
 
 class Lobby(Scene):
@@ -279,7 +281,7 @@ class MapPick(Scene):
 
 class QuestionScene(Scene):
     """Every question pops up as a card over the dimmed map, so attention
-    goes only there. Answer with keys 1-3 or by clicking. The server judges."""
+    goes only there. Answer with keys 1-4 or by clicking. The server judges."""
 
     CARD_W = 680
     POP_MS = 280
@@ -365,17 +367,21 @@ class QuestionScene(Scene):
         """The question on a parchment sheet with an oxblood ribbon header."""
         q = self.question()
         w = self.CARD_W
-        lines = wrap_text(q["q"], 36, w - 56)
-        choices_top = 70 + len(lines) * 36 + 14
+        lines = wrap_text(q["q"], 36, w - 56, bold=True)
+        top = 86 if q.get("category") else 64
+        choices_top = top + 6 + len(lines) * 36 + 14
         h = choices_top + len(q["choices"]) * 56 + 66
         self.card = pygame.Rect(0, 0, w, h)
-        self.card.center = (WIDTH // 2, HEIGHT // 2 + 30)
+        self.card.center = (WIDTH // 2, min(HEIGHT // 2 + 30, HEIGHT - h // 2 - 8))
         surf = pygame.Surface((w + 8, h + 8), pygame.SRCALPHA)   # room for the shadow
         draw_panel(surf, (0, 0, w, h), header=self.title(), header_h=44)
         self.draw_players(surf, w - 22, 25)
 
+        if q.get("category"):
+            label = q["category"] + (f"  ·  {q['difficulty']}" if q.get("difficulty") else "")
+            text(surf, label, (28, 58), INK_SOFT, size=24, italic=True)
         for i, line in enumerate(lines):
-            text(surf, line, (28, 64 + i * 36), INK, size=36, bold=True)
+            text(surf, line, (28, top + i * 36), INK, size=36, bold=True)
 
         active = self.can_answer()
         mine = self.app.answered_choice if self.app.answered_q == self.app.question_token() else None
@@ -397,7 +403,9 @@ class QuestionScene(Scene):
                              border_radius=4)
             draw_seal(surf, (local.x + 24, local.centery), str(i + 1), r=15,
                       color=(150, 36, 30) if active or i == mine else (158, 120, 104))
-            text(surf, choice, (local.x + 52, local.y + 10), ink, size=32)
+            label, size = fit_text(choice, local.w - 64, 32, 22)
+            text(surf, label, (local.x + 52, local.centery - font(size).get_height() // 2), ink,
+                 size=size)
 
         bar_y = choices_top + len(q["choices"]) * 56 + 4
         bar = pygame.Rect(28, bar_y, w - 56, 10)

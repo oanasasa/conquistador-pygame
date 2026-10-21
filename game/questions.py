@@ -12,7 +12,11 @@ def load_questions(path=QUESTIONS_PATH):
 
 def public_view(q):
     """The question as clients may see it: everything except the answer."""
-    return {"q": q["q"], "choices": list(q["choices"])}
+    view = {"q": q["q"], "choices": list(q["choices"])}
+    for key in ("category", "difficulty"):
+        if q.get(key):
+            view[key] = q[key]
+    return view
 
 
 class QuestionDeck:

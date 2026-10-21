@@ -43,7 +43,7 @@ castles. The game ends when one player controls every region.
    run out. All picks are then revealed at once. A region picked by only one
    player goes to that player.
 4. If 2 or 3 players picked the same region, they play a bonus question for it:
-   - All of them see the question at the same moment and answer with `1`-`3`
+   - All of them see the question at the same moment and answer with `1`-`4`
      or by clicking.
    - The quickest correct answer wins the region, judged by the order answers
      reach the host.
@@ -71,7 +71,7 @@ Played while any region is still free. Players cannot attack each other yet.
    locks it, shown hatched in that player's color, and nobody else can select it.
    A player can change their selection, which releases the old region.
 3. When the 10 seconds are up, everyone who selected a region answers the same
-   question (keys `1`-`3` or click), with 10 seconds to answer.
+   question (keys `1`-`4` or click), with 10 seconds to answer.
 4. Each player who answers correctly takes the region they selected. A wrong
    answer or no answer means no region this round.
 5. If nobody selected anything, a new round starts.
@@ -115,7 +115,9 @@ These apply to every duel, both the opening bonus questions and the war duels:
 ## Question rules
 
 - Questions must be general knowledge with short, unambiguous answers.
-- Each question has exactly three choices with one correct answer.
+- Each question has three or four choices with one correct answer.
+- Most questions come from the Open Trivia Database (opentdb.com): History, Art
+  and Mythology. The card shows each question's category and difficulty.
 - Questions are stored in `data/questions.json` and marked `"reviewed": true`
   only after the owner has checked them.
 

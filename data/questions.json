@@ -1,20 +1,2118 @@
 [
   {
     "q": "What is the capital of Romania?",
-    "choices": ["Cluj-Napoca", "Bucharest", "Iasi"],
+    "choices": [
+      "Cluj-Napoca",
+      "Bucharest",
+      "Iasi"
+    ],
     "answer": 1,
     "reviewed": true
   },
   {
     "q": "In which year did Columbus reach the Americas?",
-    "choices": ["1392", "1492", "1592"],
+    "choices": [
+      "1392",
+      "1492",
+      "1592"
+    ],
     "answer": 1,
     "reviewed": true
   },
   {
     "q": "Which river forms much of Romania's southern border?",
-    "choices": ["Mures", "Olt", "Danube"],
+    "choices": [
+      "Mures",
+      "Olt",
+      "Danube"
+    ],
     "answer": 2,
+    "reviewed": true
+  },
+  {
+    "q": "Which Nation did NOT have a Colony in modern-day North America?",
+    "choices": [
+      "Portugal",
+      "Sweden",
+      "Spain",
+      "Netherlands"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who tutored Alexander the Great?",
+    "choices": [
+      "Plato",
+      "King Philip",
+      "Aristotle",
+      "Socrates"
+    ],
+    "answer": 2,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "According to legend, the ancient Greeks constructed a huge wooden model of which animal to gain entrance to Troy?",
+    "choices": [
+      "Elephant",
+      "Goat",
+      "Horse",
+      "Wolf"
+    ],
+    "answer": 2,
+    "category": "History",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "How long did World War II last?",
+    "choices": [
+      "6 years",
+      "7 years",
+      "4 years",
+      "5 years"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "The Hagia Sophia was commissioned by which emperor of the Byzantine Empire?",
+    "choices": [
+      "Theodosius the Great",
+      "Constantine IV",
+      "Arcadius",
+      "Justinian I"
+    ],
+    "answer": 3,
+    "category": "History",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "How many sonatas did Ludwig van Beethoven write?",
+    "choices": [
+      "21",
+      "32",
+      "50",
+      "31"
+    ],
+    "answer": 1,
+    "category": "History",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who famously coined the phrase \"I think, therefore I am\"?",
+    "choices": [
+      "Aristotle",
+      "Descartes",
+      "Shakespeare",
+      "Plato"
+    ],
+    "answer": 1,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "The seed drill was invented by which British inventor?",
+    "choices": [
+      "Jethro Tull",
+      "Charles Babbage",
+      "J.J Thomson",
+      "Isaac Newton"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What year did Australia become a federation?",
+    "choices": [
+      "1899",
+      "1911",
+      "1910",
+      "1901"
+    ],
+    "answer": 3,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who was the British Prime Minister at the outbreak of the Second World War in 1939?",
+    "choices": [
+      "Winston Churchill",
+      "Neville Chamberlain",
+      "Ramsay MacDonald",
+      "Stanley Baldwin"
+    ],
+    "answer": 1,
+    "category": "History",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "How many women joined the United States Armed Services during World War II?",
+    "choices": [
+      "350,000",
+      "225,000",
+      "100,000",
+      "500,000"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What was Napoleon Bonaparte's name before he changed it?",
+    "choices": [
+      "Napoleone di Buonaparte",
+      "Napoleão do Boaparte",
+      "Napoleona de Buenoparte",
+      "Naapolion van Bonijpaart"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In what year was the last natural case of smallpox documented?",
+    "choices": [
+      "1977",
+      "1990",
+      "1982",
+      "1980"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who was the only US President to be elected four times?",
+    "choices": [
+      "George Washington",
+      "Franklin Roosevelt",
+      "Theodore Roosevelt",
+      "Abraham Lincoln"
+    ],
+    "answer": 1,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In the Seven Wonders of the World, which wonder is the only that has survived to this day?",
+    "choices": [
+      "Lighthouse of Alexandria",
+      "Great Pyramid of Giza",
+      "Statue of Zeus at Olympia",
+      "Colossus of Rhodes"
+    ],
+    "answer": 1,
+    "category": "History",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In what year did the Wall Street Crash take place?",
+    "choices": [
+      "1932",
+      "1930",
+      "1925",
+      "1929"
+    ],
+    "answer": 3,
+    "category": "History",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which historical conflict killed the most people?",
+    "choices": [
+      "Taiping Rebellion",
+      "World War II",
+      "Three Kingdoms War",
+      "Mongol conquests"
+    ],
+    "answer": 1,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What was the real name of the Albanian national leader Skanderbeg?",
+    "choices": [
+      "Gjergj Kastrioti",
+      "Diturak Zhulati",
+      "Iskander Bejko",
+      "Mirash Krasniki"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "The collapse of the Soviet Union took place in which year?",
+    "choices": [
+      "1991",
+      "1992",
+      "1990",
+      "1891"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "How old was Adolf Hitler when he died?",
+    "choices": [
+      "56",
+      "65",
+      "47",
+      "43"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What year is considered to be the year that the British Empire ended?",
+    "choices": [
+      "1986",
+      "1971",
+      "1981",
+      "1997"
+    ],
+    "answer": 3,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In what year did Texas secede from Mexico?",
+    "choices": [
+      "1845",
+      "1838",
+      "1836",
+      "1844"
+    ],
+    "answer": 2,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What disease crippled President Franklin D. Roosevelt and led him to help the nation find a cure?",
+    "choices": [
+      "Polio",
+      "Meningitis",
+      "HIV",
+      "Cancer"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In 1845, a series of wars named after which indigenous people began in New Zealand?",
+    "choices": [
+      "Polynesians",
+      "Papuans",
+      "Māori",
+      "Aborigines"
+    ],
+    "answer": 2,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which English king was married to Eleanor of Aquitaine?",
+    "choices": [
+      "Henry V",
+      "Richard I",
+      "Henry I",
+      "Henry II"
+    ],
+    "answer": 3,
+    "category": "History",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "During the Roman Triumvirate of 42 BCE, what region of the Roman Republic was given to Lepidus?",
+    "choices": [
+      "Hispania",
+      "Gallia",
+      "Asia",
+      "Italia"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In what year was the M1911 pistol designed?",
+    "choices": [
+      "1907",
+      "1899",
+      "1911",
+      "1917"
+    ],
+    "answer": 2,
+    "category": "History",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "When was the city of Rome, Italy founded?",
+    "choices": [
+      "902 BCE",
+      "524 BCE",
+      "697 BCE",
+      "753 BCE"
+    ],
+    "answer": 3,
+    "category": "History",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which one of these rulers did not belong to the Habsburg dynasty?",
+    "choices": [
+      "Francis Joseph",
+      "Philip II",
+      "Philip V",
+      "Charles V"
+    ],
+    "answer": 2,
+    "category": "History",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What is widely considered to be the oldest civilization known to mankind?",
+    "choices": [
+      "Assyria",
+      "Babylon",
+      "Phoenicia",
+      "Sumeria"
+    ],
+    "answer": 3,
+    "category": "History",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "When did Norway get its constitution?",
+    "choices": [
+      "1814",
+      "1905",
+      "1854",
+      "1932"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What was the original name of New York City?",
+    "choices": [
+      "New London",
+      "New Rome",
+      "New Paris",
+      "New Amsterdam"
+    ],
+    "answer": 3,
+    "category": "History",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "One of the deadliest pandemics, the \"Spanish Flu\", killed off what percentage of the human world population at the time?",
+    "choices": [
+      "3 to 6 percent",
+      "1 to 3 percent",
+      "6 to 10 percent",
+      "less than 1 percent"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "When did Canada leave the confederation to become their own nation?",
+    "choices": [
+      "July 1st, 1832",
+      "July 1st, 1867",
+      "July 1st, 1763",
+      "July 1st, 1902"
+    ],
+    "answer": 1,
+    "category": "History",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "When did the Battle of the Bulge end?",
+    "choices": [
+      "December 7, 1941",
+      "December 16, 1944",
+      "August 6, 1945",
+      "January 25, 1945"
+    ],
+    "answer": 3,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who was the first president born in the independent United States?",
+    "choices": [
+      "George Washington",
+      "Martin Van Buren",
+      "John Adams",
+      "James Monroe"
+    ],
+    "answer": 1,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which British monarch was also known as \"William of Orange\"?",
+    "choices": [
+      "William I",
+      "William IV",
+      "William II",
+      "William III"
+    ],
+    "answer": 3,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who is attributed credit for recording the epic poem The Odyssey?",
+    "choices": [
+      "Socrates",
+      "Odysseus",
+      "Homer",
+      "Aristotle"
+    ],
+    "answer": 2,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "When did O, Canada officially become the national anthem?",
+    "choices": [
+      "1950",
+      "1920",
+      "1880",
+      "1980"
+    ],
+    "answer": 3,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "On which day did the attempted coup d'etat of 1991 in the Soviet Union begin?",
+    "choices": [
+      "August 21",
+      "December 24",
+      "August 19",
+      "December 26"
+    ],
+    "answer": 2,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What is the mnemonic device for remembering the fates of the wives of Henry VIII?",
+    "choices": [
+      "Beheaded, Died, Divorced, Divorced, Beheaded, Survived",
+      "Survived, Beheaded, Died, Divorced, Divorced, Beheaded",
+      "Died, Beheaded, Divorced, Beheaded, Survived, Divorced",
+      "Divorced, Beheaded, Died, Divorced, Beheaded, Survived"
+    ],
+    "answer": 3,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "When was the United States National Security Agency established?",
+    "choices": [
+      "November 4, 1952",
+      "November 25, 2002",
+      "July 26, 1908",
+      "July 1, 1973"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "During which American Civil War campaign did Union troops dig a tunnel beneath Confederate troops to detonate explosives underneath them?",
+    "choices": [
+      "Siege of Petersburg",
+      "Gettysburg Campagin",
+      "Siege of Vicksburg",
+      "Antietam Campaign"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who was the last Roman emperor in the Year of Four Emperors (69 AD)?",
+    "choices": [
+      "Galba",
+      "Vespasian",
+      "Vitellius",
+      "Otho"
+    ],
+    "answer": 1,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who was Hannibal?",
+    "choices": [
+      "British serial killer",
+      "Greek philosopher",
+      "Carthaginian general",
+      "French explorer"
+    ],
+    "answer": 2,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In what year was the video game company Electronic Arts founded?",
+    "choices": [
+      "2005",
+      "1981",
+      "1982",
+      "1999"
+    ],
+    "answer": 2,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who was the first American in space?",
+    "choices": [
+      "Neil Armstrong",
+      "John Glenn",
+      "Alan Shephard",
+      "Jim Lovell"
+    ],
+    "answer": 2,
+    "category": "History",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which of the following battles is often considered as marking the beginning of the fall of the Western Roman Empire?",
+    "choices": [
+      "Battle of Adrianople",
+      "Battle of Thessalonica",
+      "Battle of Constantinople",
+      "Battle of Pollentia"
+    ],
+    "answer": 0,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "When did Vesuvius destroy the city of Pompeii?",
+    "choices": [
+      "62 AD",
+      "31 BC",
+      "54 BC",
+      "79 AD"
+    ],
+    "answer": 3,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What was the name of the African-American cultural explosion centered in upper Manhattan during the 1920s and 1930s?",
+    "choices": [
+      "Inwood Renaissance",
+      "Upper East Renaissance",
+      "Bed-Stuy Renaissance",
+      "Harlem Renaissance"
+    ],
+    "answer": 3,
+    "category": "History",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What is the world's oldest known piece of fiction?",
+    "choices": [
+      "Epic of Gilgamesh",
+      "Rosetta Stone",
+      "Code of Hammurabi",
+      "Papyrus of Ani"
+    ],
+    "answer": 0,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "When was Salvador Dali's painting, \"The Persistence of Memory,\" completed?",
+    "choices": [
+      "1929",
+      "1934",
+      "1931",
+      "1932"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What French sculptor designed the Statue of Liberty?",
+    "choices": [
+      "Henri Matisse",
+      "Jean-Léon Gérôme",
+      "Frédéric Auguste Bartholdi",
+      "Auguste Rodin"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What was the first successful and commercially viable photographic technique?",
+    "choices": [
+      "Kodachrome film",
+      "The Daguerreotype",
+      "The Turin Shroud",
+      "Collodion process"
+    ],
+    "answer": 1,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What nationality was the famous artist Van Gogh?",
+    "choices": [
+      "Russian",
+      "Polish",
+      "Dutch",
+      "French"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who designed the Chupa Chups logo?",
+    "choices": [
+      "Vincent van Gogh",
+      "Salvador Dali",
+      "Andy Warhol",
+      "Pablo Picasso"
+    ],
+    "answer": 1,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which time signature is commonly known as “Cut Time?”",
+    "choices": [
+      "3/4",
+      "6/8",
+      "2/2",
+      "4/4"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which Greek sculptor designed the Athena Parthenos statue inside the Parthenon?",
+    "choices": [
+      "Scopas",
+      "Phidias",
+      "Praxiteles",
+      "Hesiod"
+    ],
+    "answer": 1,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who painted the epic mural Guernica?",
+    "choices": [
+      "Francisco Goya",
+      "Leonardo da Vinci",
+      "Pablo Picasso",
+      "Henri Matisse"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who painted the biblical fresco The Creation of Adam?",
+    "choices": [
+      "Caravaggio",
+      "Rembrandt",
+      "Leonardo da Vinci",
+      "Michelangelo"
+    ],
+    "answer": 3,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which one of these colors are not featured in Mondrian's Broadway Boogie-Woogie?",
+    "choices": [
+      "Blue",
+      "Red",
+      "Yellow",
+      "Green"
+    ],
+    "answer": 3,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which one of these paintings is not by Caspar David Friedrich?",
+    "choices": [
+      "The Monk by the Sea",
+      "The Sea of Ice",
+      "Wanderer above the Sea of Fog",
+      "The Black Sea"
+    ],
+    "answer": 3,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which artist's style was to use small different colored dots to create a picture?",
+    "choices": [
+      "Henri Rousseau",
+      "Georges Seurat",
+      "Paul Cézanne",
+      "Vincent Van Gogh"
+    ],
+    "answer": 1,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which artist painted “The Treachery of Images,” a painting of a pipe with the description \"this is not a pipe\"?",
+    "choices": [
+      "Magritte",
+      "Matisse",
+      "Modigliani",
+      "Munch"
+    ],
+    "answer": 0,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who painted the Sistine Chapel?",
+    "choices": [
+      "Raphael",
+      "Pablo Picasso",
+      "Michelangelo",
+      "Leonardo da Vinci"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which artist’s studio was known as 'The Factory'?",
+    "choices": [
+      "Andy Warhol",
+      "Roy Lichtenstein",
+      "Peter Blake",
+      "David Hockney"
+    ],
+    "answer": 0,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who sculpted the statue of David?",
+    "choices": [
+      "Auguste Rodin",
+      "Gian Lorenzo Bernini",
+      "Michelangelo",
+      "Donatello"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who painted \"American Gothic\"?",
+    "choices": [
+      "Anita Malfatti",
+      "Pablo Picasso",
+      "Grant Wood",
+      "Marc Chagall"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What year was the Mona Lisa finished?",
+    "choices": [
+      "1511",
+      "1487",
+      "1504",
+      "1523"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which art movement was Pablo Picasso known for co-founding?",
+    "choices": [
+      "Expressionism",
+      "Futurism",
+      "Cubism",
+      "Impressionism"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which artist is famous for cutting off his ear?",
+    "choices": [
+      "Michelangelo",
+      "Vincent van Gogh",
+      "Salvador Dali",
+      "Rembrandt"
+    ],
+    "answer": 1,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which of these is not an additional variation of the color purple?",
+    "choices": [
+      "Palatinate",
+      "Kobicha",
+      "Byzantium",
+      "Pomp and Power"
+    ],
+    "answer": 1,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "The painting \"The Starry Night\" by Vincent van Gogh was part of which art movement?",
+    "choices": [
+      "Neoclassical",
+      "Romanticism",
+      "Post-Impressionism",
+      "Impressionism"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What color is produced by mixing black and white?",
+    "choices": [
+      "Grey",
+      "White",
+      "Brown",
+      "Black"
+    ],
+    "answer": 0,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What is a fundamental element of the Gothic style of architecture?",
+    "choices": [
+      "pointed arch",
+      "façades surmounted by a pediment",
+      "coffered ceilings",
+      "internal frescoes"
+    ],
+    "answer": 0,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which of these are the name of a famous marker brand?",
+    "choices": [
+      "Dopix",
+      "Cofix",
+      "Marx",
+      "Copic"
+    ],
+    "answer": 3,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who painted the Mona Lisa?",
+    "choices": [
+      "Claude Monet",
+      "Leonardo da Vinci",
+      "Pablo Picasso",
+      "Vincent van Gogh"
+    ],
+    "answer": 1,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who painted The Starry Night?",
+    "choices": [
+      "Michelangelo",
+      "Leonardo da Vinci",
+      "Vincent van Gogh",
+      "Pablo Picasso"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What is another name for La Gioconda / La Joconde?",
+    "choices": [
+      "Sunflowers",
+      "The Girl with a Pearl Earring",
+      "The Mona Lisa",
+      "The Starry Night"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which artist painted the late 15th century mural 'The Last Supper'?",
+    "choices": [
+      "Paolo Uccello",
+      "Piero della Francesca",
+      "Luca Pacioli",
+      "Leonardo da Vinci"
+    ],
+    "answer": 3,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Paul Gauguin moved to which country in 1895?",
+    "choices": [
+      "France",
+      "Atuona",
+      "Lithuania",
+      "Tahiti"
+    ],
+    "answer": 3,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who painted the painting \"Nighthawks\"?",
+    "choices": [
+      "Vincent van Gogh",
+      "Johannes Vermeer",
+      "Salvador Dali",
+      "Edward Hopper"
+    ],
+    "answer": 3,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which of these paintings did Johannes Vermeer not paint?",
+    "choices": [
+      "The Lacemaker",
+      "The Milkmaid",
+      "Girl with a Pearl Earring",
+      "Bacchus"
+    ],
+    "answer": 3,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "The painting \"Guernica\" by Pablo Picasso expressed emotions of dread in response to which war?",
+    "choices": [
+      "Spanish Civil War",
+      "The Crimean War",
+      "World War I",
+      "Spanish-American War"
+    ],
+    "answer": 0,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What year did Albrecht Dürer create the painting \"The Young Hare\"?",
+    "choices": [
+      "1602",
+      "1702",
+      "1402",
+      "1502"
+    ],
+    "answer": 3,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What nationality was the surrealist painter Salvador Dali?",
+    "choices": [
+      "Spanish",
+      "Portuguese",
+      "Italian",
+      "French"
+    ],
+    "answer": 0,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What nationality was the famous artist Pablo Picasso?",
+    "choices": [
+      "German",
+      "Italian",
+      "Spanish",
+      "French"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Painter Piet Mondrian (1872 - 1944) was a part of what movement?",
+    "choices": [
+      "Precisionism",
+      "Neoplasticism",
+      "Impressionism",
+      "Cubism"
+    ],
+    "answer": 1,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who painted \"The Starry Night\"?",
+    "choices": [
+      "Pablo Picasso",
+      "Vincent van Gogh",
+      "Edvard Munch",
+      "Claude Monet"
+    ],
+    "answer": 1,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Albrecht Dürer's birthplace and place of death were in...",
+    "choices": [
+      "Bamberg",
+      "Berlin",
+      "Nürnberg",
+      "Augsburg"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who painted \"The Scream\"?",
+    "choices": [
+      "Henri Matisse",
+      "Vincent Van Gogh",
+      "Edvard Munch",
+      "Picasso"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which painting was not made by Vincent Van Gogh?",
+    "choices": [
+      "Starry Night",
+      "The Ninth Wave",
+      "Café Terrace at Night",
+      "Bedroom In Arles"
+    ],
+    "answer": 1,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who painted \"Swans Reflecting Elephants\", \"Sleep\", and \"The Persistence of Memory\"?",
+    "choices": [
+      "Edgar Degas",
+      "Jackson Pollock",
+      "Salvador Dali",
+      "Vincent van Gogh"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In \"Last Supper\" by Leonardo Da Vinci, what two colors were the robes worn by Jesus?",
+    "choices": [
+      "Red and White",
+      "Red and Blue",
+      "Red and Yellow",
+      "Red and Black"
+    ],
+    "answer": 1,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "How many paint and pastel versions of \"The Scream\" is Norwegian painter Edvard Munch believed to have produced?",
+    "choices": [
+      "2",
+      "4",
+      "1",
+      "3"
+    ],
+    "answer": 1,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What was the major distinction between the English and French Gothic styles of architecture?",
+    "choices": [
+      "Pinnacles",
+      "Gargoyles",
+      "Hemispherical Domes",
+      "Fan vaulting"
+    ],
+    "answer": 3,
+    "category": "Art",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What is the name of the Japanese art of folding paper into decorative shapes and figures?",
+    "choices": [
+      "Origami",
+      "Sumi-e",
+      "Haiku",
+      "Ukiyo-e"
+    ],
+    "answer": 0,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which Van Gogh painting depicts the view from his asylum in Saint-Rémy-de-Provence in southern France?",
+    "choices": [
+      "The Church at Auvers",
+      "The Starry Night",
+      "The Sower with Setting Sun",
+      "Wheatfields with Crows"
+    ],
+    "answer": 1,
+    "category": "Art",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What were Marcel Duchamp's readymades?",
+    "choices": [
+      "paintings with a barely visible outlined square",
+      "a group of identical steel boxes jutting from the wall",
+      "utilitarian objects elevated to the status of art",
+      "a series focused on color and light as opposed to line and shape"
+    ],
+    "answer": 2,
+    "category": "Art",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What weakpoint of Achilles was expoited by the Trojan prince, Paris?",
+    "choices": [
+      "Calf",
+      "Neck",
+      "Heel",
+      "Back"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Talos, the mythical giant bronze man, was the protector of which island?",
+    "choices": [
+      "Crete",
+      "Cyprus",
+      "Sicily",
+      "Sardinia"
+    ],
+    "answer": 0,
+    "category": "Mythology",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Nidhogg is a mythical creature from what mythology?",
+    "choices": [
+      "Greek",
+      "Norse",
+      "Hindu",
+      "Egyptian"
+    ],
+    "answer": 1,
+    "category": "Mythology",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "The ancient Roman god of war was commonly known as which of the following?",
+    "choices": [
+      "Ares",
+      "Mars",
+      "Jupiter",
+      "Juno"
+    ],
+    "answer": 1,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What mytological creatures have women's faces and vultures' bodies?",
+    "choices": [
+      "Lilith",
+      "Nymph",
+      "Harpies",
+      "Mermaids"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What is the name of the Greek god of blacksmiths?",
+    "choices": [
+      "Artagatus",
+      "Vulcan",
+      "Hephaestus",
+      "Dyntos"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who was the only god from Greece who did not get a name change in Rome?",
+    "choices": [
+      "Zeus",
+      "Demeter",
+      "Apollo",
+      "Athena"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "According to Japanese folklore, what is the favorite food of the Kappa.",
+    "choices": [
+      "Kabocha",
+      "Cucumbers",
+      "Nasu",
+      "Soba"
+    ],
+    "answer": 1,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which figure from Greek mythology traveled to the underworld to return his wife Eurydice to the land of the living?",
+    "choices": [
+      "Hercules",
+      "Orpheus",
+      "Daedalus",
+      "Perseus"
+    ],
+    "answer": 1,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "According to Algonquian folklore, how does one transform into a Wendigo?",
+    "choices": [
+      "Drinking the blood of many slain animals.",
+      "Excessive mutilation of animal corpses.",
+      "Participating in cannibalism.",
+      "Performing a ritual involving murder."
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "An Ankh is the Egyptian Hieroglyph for what?",
+    "choices": [
+      "Poison",
+      "Hatred",
+      "Love",
+      "Life"
+    ],
+    "answer": 3,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who is the father of Icarus, who flew too close to the sun?",
+    "choices": [
+      "Zeus",
+      "Minos",
+      "Perseus",
+      "Daedalus"
+    ],
+    "answer": 3,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In Norse Mythology, what is the name of the symbol commonly referred to as the \"Tree of Life\"?",
+    "choices": [
+      "Odin's Roots",
+      "Ymir",
+      "Yggdrasil",
+      "Tree of the Earth"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Hera is god of...",
+    "choices": [
+      "Agriculture",
+      "Marriage",
+      "War",
+      "Sea"
+    ],
+    "answer": 1,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In Norse Mythology, Baldr was killed by Loki with a magical spear made from what plant?",
+    "choices": [
+      "Hemlock",
+      "Buckthorn",
+      "Mistletoe",
+      "Wolf's Bane"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which of these mythological creatures is said to be half-man and half-horse?",
+    "choices": [
+      "Gorgon",
+      "Minotaur",
+      "Centaur",
+      "Pegasus"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which of the following is NOT a god in Norse Mythology.",
+    "choices": [
+      "Tyr",
+      "Snotra",
+      "Loki",
+      "Jens"
+    ],
+    "answer": 3,
+    "category": "Mythology",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "The Maori hold that which island nation was founded by Kupe, who discovered it under a long white cloud?",
+    "choices": [
+      "Hawaii",
+      "Vanuatu",
+      "Fiji",
+      "New Zealand"
+    ],
+    "answer": 3,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What is the name of the wildman that Gilgamesh befriends and goes on adventures with?",
+    "choices": [
+      "Agga",
+      "Enkidu",
+      "Ishtar",
+      "Inanna"
+    ],
+    "answer": 1,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "According to the Egyptian Myth of Osiris, who murdered Osiris?",
+    "choices": [
+      "Horus",
+      "Anhur",
+      "Ra",
+      "Set"
+    ],
+    "answer": 3,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "The Norse god Odin has two pet crows named \"Huginn\" and \"Muninn\".  What do their names mean?",
+    "choices": [
+      "Power & Peace",
+      "Sleeping & Waking",
+      "Thought & Memory",
+      "War & Learning"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In Greek mythology, who is the god of wine?",
+    "choices": [
+      "Dionysus",
+      "Demeter",
+      "Apollo",
+      "Hephaestus"
+    ],
+    "answer": 0,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What mythology did the god \"Apollo\" come from?",
+    "choices": [
+      "Greek and Roman",
+      "Greek, Roman and Norse",
+      "Greek and Chinese",
+      "Roman and Spanish"
+    ],
+    "answer": 0,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In most traditions, who was the wife of Zeus?",
+    "choices": [
+      "Athena",
+      "Aphrodite",
+      "Hestia",
+      "Hera"
+    ],
+    "answer": 3,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who did Hippomenes defeat in a footrace?",
+    "choices": [
+      "Peleus",
+      "Jason",
+      "Theseus",
+      "Atalanta"
+    ],
+    "answer": 3,
+    "category": "Mythology",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who is the god of war in Polynesian mythology?",
+    "choices": [
+      "Kohara",
+      "Māui",
+      "'Oro",
+      "Hina"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who was the King of Gods in Ancient Greek mythology?",
+    "choices": [
+      "Poseidon",
+      "Hermes",
+      "Zeus",
+      "Apollo"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What animal did Queen Pasipahe sleep with before she gave birth to the Minotaur in Greek Mythology?",
+    "choices": [
+      "Ox",
+      "Bull",
+      "Pig",
+      "Horse"
+    ],
+    "answer": 1,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which of the following is not one of the Greek Fates?",
+    "choices": [
+      "Narcissus",
+      "Atropos",
+      "Clotho",
+      "Lachesis"
+    ],
+    "answer": 0,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In African mythology, Anansi is a trickster and storyteller who takes the shape of which animal?",
+    "choices": [
+      "Spider",
+      "Wild dog",
+      "Monkey",
+      "Crocodile"
+    ],
+    "answer": 0,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What is the name of the Greek god of peaceful deaths?",
+    "choices": [
+      "Tartarus",
+      "Hades",
+      "Moros",
+      "Thanatos"
+    ],
+    "answer": 3,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who is the Egyptian god of reproduction and lettuce?",
+    "choices": [
+      "Meret",
+      "Min",
+      "Mut",
+      "Menu"
+    ],
+    "answer": 1,
+    "category": "Mythology",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which Norse God has a horse named Sleipnir?",
+    "choices": [
+      "Balder",
+      "Thor",
+      "Odin",
+      "Frigg"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who was the Roman god of fire?",
+    "choices": [
+      "Jupiter",
+      "Vulcan",
+      "Apollo",
+      "Mercury"
+    ],
+    "answer": 1,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In Norse mythology, what is the name of the serpent which eats the roots of the ash tree Yggdrasil?",
+    "choices": [
+      "Odin",
+      "Nidhogg",
+      "Bragi",
+      "Ymir"
+    ],
+    "answer": 1,
+    "category": "Mythology",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "A minotaur is half human half what?",
+    "choices": [
+      "Eagle",
+      "Bull",
+      "Horse",
+      "Cow"
+    ],
+    "answer": 1,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who is the God Loki's son?",
+    "choices": [
+      "Sigyn",
+      "Hel",
+      "Odin",
+      "Fenrir"
+    ],
+    "answer": 3,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which of the following Mesopotamian mythological figures was NOT a deity?",
+    "choices": [
+      "Enkimdu",
+      "Enki",
+      "Enlil",
+      "Enkidu"
+    ],
+    "answer": 3,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "How many heads does Cerberus have?",
+    "choices": [
+      "1",
+      "3",
+      "5",
+      "2"
+    ],
+    "answer": 1,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "This Greek goddess's name was chosen for the dwarf planet responsible for discord on Pluto's classification amongst astronomers.",
+    "choices": [
+      "Dysnomia",
+      "Ceres",
+      "Eris",
+      "Charon"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "In Greek mythology, Persephone must return to the underworld because she had eaten what kind of seeds?",
+    "choices": [
+      "Orange",
+      "Fig",
+      "Pomegranate",
+      "Sunflower"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "The Nike apparel and footwear brand takes it's name from the Greek goddess of what?",
+    "choices": [
+      "Courage",
+      "Strength",
+      "Victory",
+      "Honor"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Who is a minor god that is protector and creator of various arts, such as cheese making and bee keeping.",
+    "choices": [
+      "Autonoe",
+      "Cephisso",
+      "Aristaeus",
+      "Carme"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Which of the following is not true about the life of Tiresias?",
+    "choices": [
+      "Athena turned him into a woman, and then years later back into a man",
+      "Revealed to Oedipus that Oedipus had married his own mother",
+      "Sailed with the Argonauts to find the golden fleece",
+      "Hera blinded him after he agreed with Zeus in an argument"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Neptune's greek name was...",
+    "choices": [
+      "Apollo",
+      "Poseidon",
+      "Zeus",
+      "Ares"
+    ],
+    "answer": 1,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "Hel was the daughter of which Norse Mythological figure?",
+    "choices": [
+      "Odin",
+      "Balder",
+      "Loki",
+      "Thor"
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What immense structure is referred to in Norse Mythology as the Yggdrasil.",
+    "choices": [
+      "Castle",
+      "Temple",
+      "Mountain",
+      "Tree"
+    ],
+    "answer": 3,
+    "category": "Mythology",
+    "difficulty": "hard",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "The greek god Poseidon was the god of what?",
+    "choices": [
+      "The Sea",
+      "Sun",
+      "Fire",
+      "War"
+    ],
+    "answer": 0,
+    "category": "Mythology",
+    "difficulty": "easy",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "The Hippogriff, not to be confused with the Griffon, is a magical creature with the front half of an eagle, and the back half of what?",
+    "choices": [
+      "A Dragon",
+      "A Tiger",
+      "A Lion",
+      "A Horse"
+    ],
+    "answer": 3,
+    "category": "Mythology",
+    "difficulty": "medium",
+    "source": "opentdb",
+    "reviewed": true
+  },
+  {
+    "q": "What was the punishment for Sysiphus's craftiness?",
+    "choices": [
+      "Standing in a lake filled with water he could not drink.",
+      "Tied to a boulder for eternity, being pecked by birds.",
+      "Cursed to roll a boulder up a hill for eternity.",
+      "To fell a tree that regenerated after every axe swing."
+    ],
+    "answer": 2,
+    "category": "Mythology",
+    "difficulty": "hard",
+    "source": "opentdb",
     "reviewed": true
   }
 ]

@@ -283,6 +283,18 @@ def wrap_text(s, size, width, bold=False):
     return lines
 
 
+def fit_text(s, width, size, min_size):
+    """Shrink `s` from `size` toward `min_size` until it fits `width` pixels;
+    if it still doesn't fit, cut it short with an ellipsis."""
+    while size > min_size and font(size).size(s)[0] > width:
+        size -= 2
+    if font(size).size(s)[0] > width:
+        while s and font(size).size(s + "…")[0] > width:
+            s = s[:-1]
+        s = s.rstrip() + "…"
+    return s, size
+
+
 def ease_out_back(t):
     """0 -> 1 with a small overshoot, for the 'pop' effect."""
     c = 1.70158

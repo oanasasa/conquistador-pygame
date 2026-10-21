@@ -1,5 +1,7 @@
+"""Sound playback from files. Tests write tiny silent WAVs to a temp folder;
+the real sounds live in assets/audio/."""
 import os
-import random
+import wave
 
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
@@ -8,38 +10,49 @@ import pygame  # noqa: E402
 from ui import sound  # noqa: E402
 
 
-def test_note_frequencies():
-    assert sound.note_freq("A4") == 440.0
-    assert round(sound.note_freq("A5")) == 880
-    assert round(sound.note_freq("G#4"), 1) == 415.3
-    assert round(sound.note_freq("C3"), 1) == 130.8
+def silent_wav(path, seconds=0.05):
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(22050)
+        w.writeframes(b"\0\0" * int(22050 * seconds))
 
 
-def test_tune_bars_line_up_with_the_bass():
-    beats = sum(b for _, b in sound.VERSE + sound.REFRAIN)
-    assert beats == 1 + 3 * len(sound.BASS)              # pickup + one bass note per bar
-
-
-def test_synthesized_sounds_are_audible_and_short():
-    rate = 22050
-    for samples, longest in ((sound.tick(rate, False), 0.1), (sound.tick(rate, True), 0.1),
-                             (sound.bell(rate), 2), (sound.horn(rate), 1)):
-        assert 0 < len(samples) <= longest * rate
-        assert max(abs(v) for v in samples) > 0.1
-    tune = sound.render_tune(rate, random.Random(1))
-    assert 30 * rate < len(tune) < 60 * rate
-
-
-def test_sounds_play_and_mute_without_errors():
+def test_missing_files_mean_silence_not_errors(tmp_path):
     pygame.mixer.init(22050, -16, 1)
-    s = sound.Sounds()
-    s._build()                                           # build now instead of in the background
+    s = sound.Sounds(folder=tmp_path)
+    assert s.effects == {} and s.music_file is None
+    s.play("tick")
+    s.lobby_music(True)
+    assert not s.playing
+
+
+def test_files_are_found_and_urgent_tick_falls_back(tmp_path):
+    pygame.mixer.init(22050, -16, 1)
+    for name in ("lobby", "tick", "bell"):
+        silent_wav(tmp_path / f"{name}.wav")
+    s = sound.Sounds(folder=tmp_path)
+    assert s.music_file == tmp_path / "lobby.wav"
+    assert set(s.effects) == {"tick", "tick_urgent", "bell"}
+    assert s.effects["tick_urgent"] is s.effects["tick"]
+
+
+def test_music_plays_mutes_and_stops(tmp_path):
+    pygame.mixer.init(22050, -16, 1)
+    silent_wav(tmp_path / "lobby.wav", seconds=1)
+    s = sound.Sounds(folder=tmp_path)
     s.lobby_music(True)
     assert s.playing
-    s.play("tick")
     s.toggle_mute()
     assert s.muted and not s.playing
     s.toggle_mute()
     assert s.playing
     s.lobby_music(False)
     assert not s.playing
+
+
+def test_unreadable_file_is_skipped(tmp_path):
+    pygame.mixer.init(22050, -16, 1)
+    (tmp_path / "bell.wav").write_bytes(b"not a sound")
+    s = sound.Sounds(folder=tmp_path)
+    assert "bell" not in s.effects

@@ -30,14 +30,10 @@ macOS may ask to allow incoming connections for Python; allow it so others can j
 
 ## Sound
 
-- In the menus and halls a lute plays *Greensleeves* (a 16th-century tune in
-  the public domain), synthesized by the game itself in `ui/sound.py`.
-- During riddles a clock ticks each second, faster-sounding in the last three;
-  a bell rings when a riddle ends and a horn calls when it is your turn to
-  choose land.
-- Press `M` to mute or unmute.
-- To use your own lobby music, put a file at `assets/audio/lobby.ogg` (or
-  `.mp3` / `.wav`).
+The game plays sounds from `assets/audio/` (see the README there for the file
+names): music looping in the menus and halls, a tick each second of a riddle,
+a bell when a riddle ends and a horn when it is your turn to choose land.
+Missing files are simply silent. Press `M` to mute or unmute.
 
 ## Controls
 

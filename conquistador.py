@@ -35,6 +35,7 @@ class App:
         self._reset_session()
         self.scene_key = None
         self.scene = None
+        self.popup = scenes.ResultPopup(self)
 
     def _reset_session(self):
         self.you = None
@@ -42,6 +43,7 @@ class App:
         self.state = None
         self.state_at = 0.0
         self.answered_q = None
+        self.answered_choice = None
 
     # ---- actions used by scenes ----------------------------------------
 
@@ -90,7 +92,8 @@ class App:
 
     def answer(self, choice):
         self.answered_q = self.question_token()
-        self.send({"t": "answer", "choice": choice})
+        self.answered_choice = choice
+        self.send({"t": "answer", "choice": choice, "q": self.answered_q[1]})
 
     def remaining(self):
         if not self.state:
@@ -161,14 +164,17 @@ class App:
         while running:
             self.poll_network()
             self.update_scene()
+            self.popup.update()
+            compact = isinstance(self.scene, scenes.QuestionScene)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT or (
                         event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                     running = False
-                else:
+                elif not self.popup.handle(event, compact):
                     self.scene.handle(event)
             self.update_scene()
             self.scene.draw(self.screen)
+            self.popup.draw(self.screen, isinstance(self.scene, scenes.QuestionScene))
             pygame.display.flip()
             clock.tick(60)
         self.leave()

@@ -91,6 +91,19 @@ Played while any region is still free. Players cannot attack each other yet.
    land and that player is out of the game.
 6. Other players watch every duel and see the question but cannot answer.
 
+## Who was faster
+
+These apply to every duel, both the opening bonus questions and the war duels:
+
+- Questions pop up over the dimmed map with a countdown bar.
+- When a player wins a duel, the question stays open for up to 3 more seconds.
+  A player who hasn't answered yet can still answer to see if they were right,
+  but it can't change the result. The game moves on as soon as everyone has
+  answered.
+- After each question, a result card shows every answer: right or wrong, the
+  time taken, who was first, and how much slower the other correct answers
+  were (for example "correct, but 0.4s slower").
+
 ## Winning
 
 - The last player standing owns the whole map and wins.

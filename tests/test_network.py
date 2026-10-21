@@ -51,11 +51,17 @@ def test_lobby_pick_and_duel(server):
     duel = wait_for(b, "state", lambda m: m["phase"] == "duel")["duel"]
     assert duel["region"] == 4 and "answer" not in duel["question"]
     correct = server.game.duel.question["answer"]
-    b.send({"t": "answer", "choice": correct})
+    q = duel["question_no"]
+    b.send({"t": "answer", "choice": correct, "q": q})
     st = wait_for(a, "state", lambda m: m["last_result"] is not None)
     assert st["last_result"]["winner"] == 1
     assert st["owner"] == {"4": 1}
-    assert st["phase"] == "pick" and st["pickers"] == [0]
+    assert st["duel"]["reveal"] and st["duel"]["waiting"] == [0]   # Ana can still answer
+    a.send({"t": "answer", "choice": correct, "q": q})
+    st = wait_for(a, "state", lambda m: m["phase"] == "pick")
+    assert st["pickers"] == [0]
+    late = st["last_result"]["answers"][-1]
+    assert late["player"] == 0 and late["correct"] and late["late"]
 
     for c in (a, b):
         c.close()

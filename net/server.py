@@ -168,7 +168,7 @@ class GameServer:
                 else:
                     self._send_state(pid)   # hidden picks: only the picker hears back
         elif kind == "answer" and self.game:
-            if self.game.answer(pid, msg.get("choice"), now) is not None:
+            if self.game.answer(pid, msg.get("choice"), now, msg.get("q")) is not None:
                 self._broadcast_state()
 
     def _drop(self, pid):

@@ -37,6 +37,13 @@ RIDGES = [
 _fonts = {}
 
 
+def opaque_surface(size):
+    """A surface with no alpha channel. On macOS a plain pygame.Surface takes
+    the window's format, which has alpha; blending layers onto it can leave
+    pixels transparent, and the window then shows them as black."""
+    return pygame.Surface(size, 0, 24)
+
+
 def serif(size, italic=False, bold=False):
     key = (size, italic, bold)
     if key not in _fonts:
@@ -112,7 +119,7 @@ class MapView:
 
     def _build_raster(self):
         """Land ids painted as colors (red = id, green 0 = land) for clicks and masks."""
-        self.raster = pygame.Surface(self.map_rect.size)
+        self.raster = opaque_surface(self.map_rect.size)
         self.raster.fill((255, 255, 255))
         self.county_rings = []       # county borders to draw (not Bucharest: it's a city mark)
         for county in self.data["counties"]:
@@ -144,7 +151,7 @@ class MapView:
 
     def _render_base(self):
         rng = random.Random(1492)
-        surf = pygame.Surface(self.area.size)
+        surf = opaque_surface(self.area.size)
         surf.fill(PARCHMENT)
         w, h = self.area.size
         ox, oy = self.map_rect.x - self.area.x, self.map_rect.y - self.area.y

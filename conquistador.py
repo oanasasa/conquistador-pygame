@@ -48,6 +48,7 @@ class App:
         self.state_at = 0.0
         self.answered_q = None
         self.answered_choice = None
+        self.heard_result = None
 
     # ---- actions used by scenes ----------------------------------------
 
@@ -140,6 +141,9 @@ class App:
             elif kind == "state":
                 self.state = msg
                 self.state_at = time.monotonic()
+                self.hear_result(msg.get("stage"), msg.get("last_result"))
+            elif kind == "judged":
+                self.sound.play("win" if msg.get("correct") else "lose")
             elif kind == "error":
                 self.error = msg["msg"]
             elif kind == "disconnected":
@@ -147,6 +151,14 @@ class App:
                 self.leave()
                 self.error = error
                 return
+
+    def hear_result(self, stage, res):
+        """The cannon roars once for every castle tower toppled."""
+        if not res or (stage, res.get("no")) == self.heard_result:
+            return
+        self.heard_result = (stage, res.get("no"))
+        if res.get("kind") == "attack" and res.get("base") and res.get("attacker_won"):
+            self.sound.play("cannon")
 
     # ---- scenes --------------------------------------------------------
 
@@ -161,24 +173,9 @@ class App:
 
     MENU_SCENES = ("name", "lobby", "settings", "room")
 
-    def your_move(self, key):
-        """True when the new scene asks this player to choose land."""
-        st = self.state or {}
-        if key == "pick":
-            return self.you in st.get("pickers", [])
-        if key == "grab_select":
-            return bool(st.get("selectable"))
-        if key == "war_select":
-            return st.get("attacker") == self.you
-        return False
-
     def update_scene(self):
         key = self.current_key()
         if key != self.scene_key:
-            if key == "interlude":
-                self.sound.play("bell")          # the riddle is done
-            elif self.your_move(key):
-                self.sound.play("horn")          # thy turn to choose
             self.scene_key = key
             self.scene = {
                 "name": scenes.NameEntry, "lobby": scenes.Lobby, "room": scenes.Room,
@@ -197,6 +194,9 @@ class App:
             self.update_scene()
             self.popup.update()
             self.sound.lobby_music(self.scene_key in self.MENU_SCENES)
+            if not isinstance(self.scene, scenes.QuestionScene):
+                self.sound.riddle_clock(False)
+            self.sound.update()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT or (
                         event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):

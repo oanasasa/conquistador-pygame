@@ -54,6 +54,7 @@ class OpeningPhase:
         self.questions_asked = 0   # numbers questions across all duels
         self.results = 0           # numbers results so clients notice new ones
         self.reveal = None         # a won duel question still open for the others
+        self.last_judgement = None # the latest judged answer, for that player's ears only
         self.phase = None
         self.deadline = 0.0
         self._start_pick_round(set(self.players), now)
@@ -97,6 +98,7 @@ class OpeningPhase:
                 return None
             if not self.reveal.answer(player, choice, question_no, now):
                 return None
+            self.last_judgement = self.reveal.result["answers"][-1]
             if self.reveal.done:
                 self._end_reveal(now)
             return "late"
@@ -108,6 +110,7 @@ class OpeningPhase:
         correct = choice == duel.question["answer"]
         duel.answers.append({"player": player, "correct": correct,
                              "elapsed": round(now - duel.asked_at, 2)})
+        self.last_judgement = duel.answers[-1]
         if correct:
             self._finish_duel(player, now, elapsed=now - duel.asked_at)
             return "correct"

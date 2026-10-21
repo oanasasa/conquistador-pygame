@@ -1,7 +1,5 @@
 """One scene per screen. Scenes read shared state from the App and send
 player actions through it; they never judge answers themselves."""
-import math
-
 import pygame
 
 from net import opentdb, protocol
@@ -465,12 +463,9 @@ class QuestionScene(Scene):
         return False
 
     def tick_clock(self):
-        """A tick each second the riddle is open; sharper in the last three."""
-        second = math.ceil(self.app.remaining())
-        if second != getattr(self, "last_second", None):
-            self.last_second = second
-            if 0 < second and not self.revealing():
-                self.app.sound.play("tick_urgent" if second <= 3 else "tick")
+        """The clock ticks while the riddle is open, louder in the last three seconds."""
+        left = self.app.remaining()
+        self.app.sound.riddle_clock(left > 0 and not self.revealing(), urgent=left <= 3)
 
     def reveal_status(self, info):
         """Status while a won question stays open for the others."""
@@ -503,7 +498,6 @@ class QuestionScene(Scene):
             self.token = token
             self.shown_at = pygame.time.get_ticks()
             self.total = max(self.app.remaining(), 1.0)
-            self.last_second = None
         self.tick_clock()
         progress = min(1.0, (pygame.time.get_ticks() - self.shown_at) / self.POP_MS)
 

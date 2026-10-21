@@ -54,11 +54,13 @@ def test_lobby_pick_and_duel(server):
     correct = server.game.duel.question["answer"]
     q = duel["question_no"]
     b.send({"t": "answer", "choice": correct, "q": q})
+    assert wait_for(b, "judged")["correct"] is True        # only Bob hears his verdict
     st = wait_for(a, "state", lambda m: m["last_result"] is not None)
     assert st["last_result"]["winner"] == 1
     assert st["owner"] == {"4": 1}
     assert st["duel"]["reveal"] and st["duel"]["waiting"] == [0]   # Ana can still answer
     a.send({"t": "answer", "choice": correct, "q": q})
+    assert wait_for(a, "judged")["correct"] is True        # right, if too slow
     st = wait_for(a, "state", lambda m: m["phase"] == "pick")
     assert st["pickers"] == [0]
     late = st["last_result"]["answers"][-1]

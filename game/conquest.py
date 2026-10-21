@@ -50,6 +50,7 @@ class ConquestPhase:
         self.results = 0           # numbers results so clients notice new ones
         self.answers = []          # [{"player", "correct", "elapsed"}] for the open question
         self.reveal = None         # a won duel question still open for the others
+        self.last_judgement = None # the latest judged answer, for that player's ears only
         self._pending_follow = None  # what happens after the reveal
         self.winner = None
         self._next_round(now)
@@ -92,6 +93,7 @@ class ConquestPhase:
                 return None
             if not self.reveal.answer(player, choice, question_no, now):
                 return None
+            self.last_judgement = self.reveal.result["answers"][-1]
             if self.reveal.done:
                 self._end_reveal(now)
             return "late"
@@ -105,6 +107,7 @@ class ConquestPhase:
                 return None
             self.answered[player] = correct
             self.answers.append(record)
+            self.last_judgement = record
             if self.answered.keys() >= self.answering:
                 self._finish_grab(now)
             return "correct" if correct else "wrong"
@@ -114,6 +117,7 @@ class ConquestPhase:
             if player not in fighters or player in a["locked_out"]:
                 return None
             self.answers.append(record)
+            self.last_judgement = record
             if correct:
                 self._duel_won(player, now)
                 return "correct"

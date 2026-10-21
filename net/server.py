@@ -211,6 +211,11 @@ class GameServer:
                     self._send_state(pid)   # hidden picks: only the picker hears back
         elif kind == "answer" and self.game:
             if self.game.answer(pid, msg.get("choice"), now, msg.get("q")) is not None:
+                # Tell only this player whether they were right (for their win/lose
+                # sound); everyone else learns it from the results as before.
+                judged = self.game.last_judgement
+                self._safe_send(self.clients.get(pid),
+                                {"t": "judged", "correct": bool(judged and judged["correct"])})
                 self._broadcast_state()
 
     def _drop(self, pid):

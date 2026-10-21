@@ -351,3 +351,14 @@ def test_no_pause_between_siege_questions():
     g.answer(0, RIGHT, SELECT_SECONDS + 1)
     g.answer(1, WRONG, SELECT_SECONDS + 1.5)                # both answered: no reveal wait
     assert g.phase == "war_duel" and g.attack["tower_q"] == 2
+
+
+def test_each_judged_answer_is_remembered_for_that_players_ears():
+    g = make({0: 0, 11: 1})
+    g.select(0, 1)
+    g.select(1, 10)
+    g.tick(SELECT_SECONDS)
+    g.answer(0, RIGHT, SELECT_SECONDS + 1)
+    assert g.last_judgement == {"player": 0, "correct": True, "elapsed": 1}
+    g.answer(1, WRONG, SELECT_SECONDS + 2)
+    assert g.last_judgement["player"] == 1 and not g.last_judgement["correct"]

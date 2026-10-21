@@ -30,10 +30,10 @@ macOS may ask to allow incoming connections for Python; allow it so others can j
 
 ## Sound
 
-The game plays sounds from `assets/audio/` (see the README there for the file
-names): music looping in the menus and halls, a tick each second of a riddle,
-a bell when a riddle ends and a horn when it is your turn to choose land.
-Missing files are simply silent. Press `M` to mute or unmute.
+The game plays the sound files in `assets/audio/` (the README there lists
+them): a theme looping in the menus and halls, a clock ticking during riddles,
+win and lose sounds for your own answers, and a cannon when a castle tower
+falls. Press `M` to mute or unmute.
 
 ## Controls
 

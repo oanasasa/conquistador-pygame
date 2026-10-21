@@ -20,18 +20,37 @@ def public_view(q):
 
 
 class QuestionDeck:
-    """Draws random questions, avoiding an immediate repeat when possible."""
+    """Deals questions in a shuffled order without repeats until all have been
+    used, then reshuffles. Questions can be added while a game is running."""
 
-    def __init__(self, questions, rng=None):
-        if not questions:
-            raise ValueError("no reviewed questions available")
-        self.questions = questions
+    def __init__(self, questions=(), rng=None):
         self.rng = rng or random.Random()
+        self.questions = list(questions)
+        self._pile = []
         self.last = None
 
+    def __len__(self):
+        return len(self.questions)
+
+    def add(self, questions):
+        new = list(questions)
+        self.questions += new
+        self.rng.shuffle(new)
+        self._pile = new + self._pile          # the pile is drawn from the end
+
+    def replace(self, questions):
+        self.questions = list(questions)
+        self._pile = []
+
     def draw(self):
-        options = [q for q in self.questions if q is not self.last] or self.questions
-        self.last = self.rng.choice(options)
+        if not self.questions:
+            raise ValueError("no questions available")
+        if not self._pile:
+            self._pile = list(self.questions)
+            self.rng.shuffle(self._pile)
+            if len(self._pile) > 1 and self._pile[-1] is self.last:
+                self._pile.insert(0, self._pile.pop())   # no immediate repeat
+        self.last = self._pile.pop()
         return self.last
 
 

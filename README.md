@@ -44,14 +44,12 @@ counties are grouped into lands, edit `LANDS` in the script and run it again
 
 ## Questions
 
-`data/questions.json` holds the question bank. Most questions come from the
-[Open Trivia Database](https://opentdb.com) (History, Art and Mythology),
-licensed [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
-To download a fresh set (your own questions in the file are kept):
-
-```bash
-python tools/import_opentdb.py --per-category 50
-```
+When you create a room, you choose the question categories (History, Art,
+Mythology) and the difficulty. The host's game then fetches matching questions
+from the [Open Trivia Database](https://opentdb.com), licensed
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). They are kept
+in memory for that room only; nothing is saved. Without internet the game uses
+the few built-in questions in `data/questions.json`.
 
 ## Tests
 

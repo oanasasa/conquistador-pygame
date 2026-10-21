@@ -2,8 +2,8 @@
 player actions through it; they never judge answers themselves."""
 import pygame
 
-from net import protocol
-from ui.widgets import (BOARD_TOP, GOLD, GRAY, HEIGHT, INK, INK_SOFT, MARGIN, PARCH_DARK,
+from net import opentdb, protocol
+from ui.widgets import (BOARD_TOP, GOLD, GRAY, HEIGHT, INK, INK_SOFT, MARGIN, OXBLOOD, PARCH_DARK,
                         PLAYER_COLORS, WHITE, WIDTH, WOOD_GREEN, WOOD_RED, Button, TextInput,
                         dim, draw_background, draw_board, draw_mark, draw_panel, draw_seal,
                         draw_shield, ease_out_back, fit_text, font, leather, region_at,
@@ -85,10 +85,10 @@ class Lobby(Scene):
 
     def handle(self, event):
         if self.create.clicked(event):
-            self.app.create_room()
+            self.app.open_settings()
             return
         if self.solo.clicked(event):
-            self.app.create_room(with_bot=True)
+            self.app.open_settings(with_bot=True)
             return
         if (self.ip.handle(event) or self.join_ip.clicked(event)) and self.ip.value.strip():
             self.app.join(self.ip.value.strip(), protocol.GAME_PORT)
@@ -113,9 +113,11 @@ class Lobby(Scene):
         for i, room in enumerate(rooms[:4]):
             y = panel.y + 56 + i * 54
             full = room["players"] >= room["max"]
-            text(screen, room["room"], (panel.x + 24, y + 8), INK, size=30, bold=True)
+            text(screen, room["room"], (panel.x + 24, y + 2), INK, size=30, bold=True)
+            text(screen, topics_line(room.get("topics"), room.get("difficulty")),
+                 (panel.x + 24, y + 28), INK_SOFT, size=22, italic=True)
             text(screen, f"{room['ip']}   ·   {room['players']}/{room['max']} players",
-                 (panel.x + 300, y + 12), INK_SOFT, size=24, italic=True)
+                 (panel.x + 360, y + 12), INK_SOFT, size=24, italic=True)
             b = Button((panel.right - 150, y, 126, 42), "Full" if full else "Join", not full)
             b.draw(screen)
             self.room_buttons.append((b, room))
@@ -127,6 +129,96 @@ class Lobby(Scene):
         if self.app.local_ip:
             text(screen, f"Your IP: {self.app.local_ip}", (WIDTH - 250, HEIGHT - 84), GRAY, size=26)
         self.draw_error(screen)
+
+
+def topics_line(categories, difficulty):
+    """'History, Art · Hard' for a room's question settings."""
+    if not categories:
+        return "Built-in questions"
+    return ", ".join(categories) + f"  ·  {(difficulty or 'any').capitalize()}"
+
+
+class CampaignSettings(Scene):
+    """Popup before creating a room: which question categories and difficulty.
+    The host's game fetches matching questions from opentdb.com when the room
+    opens; nothing is saved."""
+
+    LEVELS = [("any", "Any"), ("easy", "Easy"), ("medium", "Medium"), ("hard", "Hard")]
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.behind = Lobby(app)
+        self.panel = pygame.Rect(150, 64, 600, 470)
+        x0 = self.panel.x + 30
+        self.category_rects = {name: pygame.Rect(x0 + i * 184, self.panel.y + 126, 172, 52)
+                               for i, name in enumerate(opentdb.CATEGORIES)}
+        self.level_rects = {key: pygame.Rect(x0 + i * 136, self.panel.y + 244, 126, 48)
+                            for i, (key, _) in enumerate(self.LEVELS)}
+        with_bot = (app.settings_for or {}).get("with_bot")
+        self.back = Button((x0, self.panel.bottom - 76, 160, 50), "Back")
+        self.go = Button((self.panel.right - 30 - 250, self.panel.bottom - 76, 250, 50),
+                         "Play vs bot" if with_bot else "Create room")
+
+    def handle(self, event):
+        c = self.app.campaign
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            for name, rect in self.category_rects.items():
+                if rect.collidepoint(event.pos):
+                    chosen = c["categories"]
+                    if name in chosen and len(chosen) > 1:        # keep at least one
+                        chosen.remove(name)
+                    elif name not in chosen:
+                        chosen.append(name)
+                        chosen.sort(key=list(opentdb.CATEGORIES).index)
+            for key, rect in self.level_rects.items():
+                if rect.collidepoint(event.pos):
+                    c["difficulty"] = key
+        if self.back.clicked(event):
+            self.app.close_settings()
+        elif self.go.clicked(event):
+            self.app.create_room(with_bot=self.app.settings_for["with_bot"],
+                                 categories=list(c["categories"]), difficulty=c["difficulty"])
+
+    def draw(self, screen):
+        self.behind.draw(screen)
+        dim(screen, 170)
+        c = self.app.campaign
+        p = draw_panel(screen, self.panel, header="Prepare your campaign", header_h=44)
+        mouse = pygame.mouse.get_pos()
+
+        text(screen, "Categories", (p.x + 30, p.y + 64), INK, size=32, bold=True)
+        text(screen, "pick one or more", (p.x + 180, p.y + 72), INK_SOFT, size=24, italic=True)
+        for name, rect in self.category_rects.items():
+            on = name in c["categories"]
+            fill = (196, 160, 98) if on else ((224, 204, 160) if rect.collidepoint(mouse)
+                                              else PARCH_DARK)
+            pygame.draw.rect(screen, fill, rect, border_radius=4)
+            pygame.draw.rect(screen, INK if on else INK_SOFT, rect, 3 if on else 1, border_radius=4)
+            box = pygame.Rect(rect.x + 14, rect.centery - 11, 22, 22)
+            pygame.draw.rect(screen, (240, 228, 198), box)
+            pygame.draw.rect(screen, INK, box, 2)
+            if on:
+                pygame.draw.lines(screen, OXBLOOD, False, [(box.x + 4, box.centery),
+                                  (box.x + 9, box.bottom - 5), (box.right - 3, box.y + 3)], 3)
+            label, size = fit_text(name, rect.right - box.right - 22, 30, 22)
+            text(screen, label, (box.right + 12, rect.centery - font(size, on).get_height() // 2),
+                 INK, size=size, bold=on)
+
+        text(screen, "Difficulty", (p.x + 30, p.y + 196), INK, size=32, bold=True)
+        for key, label in self.LEVELS:
+            rect = self.level_rects[key]
+            on = c["difficulty"] == key
+            fill = OXBLOOD if on else ((224, 204, 160) if rect.collidepoint(mouse) else PARCH_DARK)
+            pygame.draw.rect(screen, fill, rect, border_radius=4)
+            pygame.draw.rect(screen, GOLD if on else INK_SOFT, rect, 2 if on else 1, border_radius=4)
+            text(screen, label, rect.center, GOLD if on else INK, size=28, center=True, bold=on)
+
+        for i, line in enumerate(wrap_text(
+                "Questions are fetched from opentdb.com when the room opens, and nothing is "
+                "saved. Without internet the game uses its built-in questions.", 24, p.w - 60)):
+            text(screen, line, (p.x + 30, p.y + 318 + i * 24), INK_SOFT, size=24, italic=True)
+        self.back.draw(screen, WOOD_RED)
+        self.go.draw(screen, WOOD_GREEN)
 
 
 class Room(Scene):
@@ -177,22 +269,56 @@ class Room(Scene):
         for i in range(len(players), protocol.MAX_PLAYERS):
             y = panel.y + 66 + i * 62
             text(screen, "an empty seat...", (panel.x + 72, y + 4), PARCH_DARK, size=28, italic=True)
+        questions = lobby.get("questions") or {}
+        loading = questions.get("status") == "loading"
+        self.draw_questions(screen, questions)
         is_host = self.app.you is not None and self.app.you == lobby.get("host")
         if is_host:
-            self.start.enabled = len(players) >= protocol.MIN_PLAYERS
+            self.start.enabled = len(players) >= protocol.MIN_PLAYERS and not loading
             self.start.draw(screen, WOOD_GREEN)
             self.add_bot.enabled = len(players) < protocol.MAX_PLAYERS
             self.add_bot.draw(screen)
             self.remove_bot.enabled = any(p.get("bot") for p in players)
             self.remove_bot.draw(screen)
-            if not self.start.enabled:
+            if len(players) < protocol.MIN_PLAYERS:
                 text(screen, "Waiting for another player, or add a bot to play alone.",
+                     (MARGIN, 486), GRAY, size=26, italic=True)
+            elif loading:
+                text(screen, "Gathering questions... Start unlocks when the first ones arrive.",
                      (MARGIN, 486), GRAY, size=26, italic=True)
         else:
             text(screen, "Waiting for the host to start...", (MARGIN, 486), GRAY, size=26,
                  italic=True)
         self.leave.draw(screen, WOOD_RED)
         self.draw_error(screen)
+
+    def draw_questions(self, screen, info):
+        """Right-hand sheet: the room's categories, difficulty and question status."""
+        p = draw_panel(screen, (600, 110, WIDTH - MARGIN - 600, 280), header="The questions")
+        x, y = p.x + 22, p.y + 60
+        cats = info.get("categories") or []
+        for name in cats or ["Built-in questions"]:
+            pygame.draw.polygon(screen, OXBLOOD, [(x, y + 10), (x + 6, y + 4), (x + 12, y + 10),
+                                                  (x + 6, y + 16)])
+            text(screen, name, (x + 22, y), INK, size=28, bold=True)
+            y += 30
+        if cats:
+            text(screen, f"Difficulty: {(info.get('difficulty') or 'any').capitalize()}",
+                 (x, y + 6), INK_SOFT, size=24, italic=True)
+            y += 32
+        status, count = info.get("status"), info.get("count", 0)
+        if status == "loading":
+            dots = "." * (pygame.time.get_ticks() // 400 % 4)
+            msg = f"Fetching from opentdb.com{dots}"
+        elif status == "ready":
+            msg = f"{count} questions ready" + (" (more coming)" if info.get("loading") else "")
+        elif status == "offline":
+            msg = f"No internet: using the {count} built-in questions"
+        else:
+            msg = f"{count} built-in questions"
+        for line in wrap_text(msg, 24, p.w - 44):
+            text(screen, line, (x, y + 10), (128, 80, 16), size=24, italic=True)
+            y += 24
 
 
 def result_line(app):

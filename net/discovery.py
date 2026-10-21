@@ -26,6 +26,7 @@ class RoomAnnouncer:
                 msg = json.dumps({
                     "tag": TAG, "room": self.server.room_name, "port": self.server.port,
                     "players": self.server.player_count(), "max": protocol.MAX_PLAYERS,
+                    "topics": self.server.categories, "difficulty": self.server.difficulty,
                 }).encode("utf-8")
                 for addr in ("<broadcast>", "127.0.0.1"):
                     try:

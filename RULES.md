@@ -116,10 +116,14 @@ These apply to every duel, both the opening bonus questions and the war duels:
 
 - Questions must be general knowledge with short, unambiguous answers.
 - Each question has three or four choices with one correct answer.
-- Most questions come from the Open Trivia Database (opentdb.com): History, Art
-  and Mythology. The card shows each question's category and difficulty.
-- Questions are stored in `data/questions.json` and marked `"reviewed": true`
-  only after the owner has checked them.
+- Before creating a room, the host chooses the question categories (History,
+  Art, Mythology; at least one) and the difficulty (Any, Easy, Medium or Hard).
+  Questions are then fetched from the Open Trivia Database (opentdb.com). The
+  room can start once the first questions have arrived. Without internet the
+  game uses its built-in questions.
+- The question card shows each question's category and difficulty.
+- Built-in questions are stored in `data/questions.json` and marked
+  `"reviewed": true` only after the owner has checked them.
 
 ## Fair play
 

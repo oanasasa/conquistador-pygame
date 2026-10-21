@@ -3,9 +3,9 @@ player actions through it; they never judge answers themselves."""
 import pygame
 
 from net import opentdb, protocol
-from ui.widgets import (BOARD_TOP, GOLD, GRAY, HEIGHT, INK, INK_SOFT, MARGIN, OXBLOOD, PARCH_DARK,
-                        PLAYER_COLORS, WHITE, WIDTH, WOOD_GREEN, WOOD_RED, Button, TextInput,
-                        dim, draw_background, draw_board, draw_mark, draw_panel, draw_seal,
+from ui.widgets import (BOARD_TOP, GOLD, GRAY, HEIGHT, INK, INK_SOFT, MARGIN, OXBLOOD,
+                        PARCH_DARK, PLAYER_COLORS, WHITE, WIDTH, WOOD_GREEN, WOOD_RED, Button,
+                        Dropdown, TextInput, dim, draw_background, draw_board, draw_mark, draw_panel, draw_seal,
                         draw_shield, ease_out_back, fit_text, font, leather, region_at,
                         region_name, text, timer_color, wrap_text)
 from ui.widgets import draw_timer as timer_ring
@@ -47,8 +47,8 @@ class Scene:
 class NameEntry(Scene):
     def __init__(self, app):
         super().__init__(app)
-        self.input = TextInput((WIDTH // 2 - 160, 300, 320, 46), placeholder="your name")
-        self.ok = Button((WIDTH // 2 - 90, 372, 180, 46), "Continue")
+        self.input = TextInput((WIDTH // 2 - 160, 300, 320, 46), placeholder="thy name")
+        self.ok = Button((WIDTH // 2 - 90, 372, 180, 46), "Onward")
 
     def handle(self, event):
         entered = self.input.handle(event) or self.ok.clicked(event)
@@ -59,14 +59,14 @@ class NameEntry(Scene):
         draw_background(screen)
         text(screen, "Conquistador", (WIDTH // 2, 110), GOLD, size=86, center=True, bold=True)
         flourish(screen, (WIDTH // 2, 158), 420)
-        text(screen, "A game of wits and conquest", (WIDTH // 2, 184), GRAY, size=30,
+        text(screen, "A contest of wits and conquest", (WIDTH // 2, 184), GRAY, size=30,
              center=True, italic=True)
         draw_panel(screen, (WIDTH // 2 - 200, 222, 400, 220), header="Who rides to battle?")
-        text(screen, "Choose your name", (WIDTH // 2 - 160, 274), INK_SOFT, size=26, italic=True)
+        text(screen, "By what name shall ye be known?", (WIDTH // 2 - 160, 274), INK_SOFT, size=26, italic=True)
         self.ok.enabled = bool(self.input.value.strip())
         self.input.draw(screen)
         self.ok.draw(screen, WOOD_GREEN)
-        text(screen, "Questions from the Open Trivia Database (opentdb.com), CC BY-SA 4.0",
+        text(screen, "Riddles from the Open Trivia Database (opentdb.com), CC BY-SA 4.0",
              (WIDTH // 2, HEIGHT - 24), GRAY, size=22, center=True, italic=True)
 
 
@@ -75,12 +75,12 @@ class Lobby(Scene):
 
     def __init__(self, app):
         super().__init__(app)
-        self.create = Button((MARGIN, 84, 220, 46), "Create room")
-        self.solo = Button((MARGIN + 240, 84, 220, 46), "Play vs bot")
-        self.ip = TextInput((MARGIN, HEIGHT - 96, 300, 46), placeholder="host IP, e.g. 192.168.1.5",
+        self.create = Button((MARGIN, 84, 220, 46), "Raise a hall")
+        self.solo = Button((MARGIN + 240, 84, 220, 46), "Face a bot")
+        self.ip = TextInput((MARGIN, HEIGHT - 96, 300, 46), placeholder="e.g. 192.168.1.5",
                             max_len=40)
         self.ip.active = False
-        self.join_ip = Button((MARGIN + 316, HEIGHT - 96, 150, 46), "Join IP")
+        self.join_ip = Button((MARGIN + 316, HEIGHT - 96, 150, 46), "Seek")
         self.room_buttons = []
 
     def handle(self, event):
@@ -104,72 +104,76 @@ class Lobby(Scene):
         self.create.draw(screen)
         self.solo.draw(screen, WOOD_GREEN)
         panel = draw_panel(screen, (MARGIN, 152, WIDTH - 2 * MARGIN, 290),
-                           header="Rooms on your network")
+                           header="Halls within earshot")
         rooms = self.app.browser.list_rooms() if self.app.browser else []
         self.room_buttons = []
         if not rooms:
-            text(screen, "No rooms found yet... create one, or ask the host for their IP.",
+            text(screen, "No hall within earshot. Raise thine own, or ask thy host where they dwell.",
                  (panel.x + 24, panel.y + 66), INK_SOFT, size=26, italic=True)
         for i, room in enumerate(rooms[:4]):
             y = panel.y + 56 + i * 54
             full = room["players"] >= room["max"]
             text(screen, room["room"], (panel.x + 24, y + 2), INK, size=30, bold=True)
-            text(screen, topics_line(room.get("topics"), room.get("difficulty")),
+            text(screen, topics_line(room.get("category"), room.get("difficulty")),
                  (panel.x + 24, y + 28), INK_SOFT, size=22, italic=True)
-            text(screen, f"{room['ip']}   ·   {room['players']}/{room['max']} players",
+            text(screen, f"{room['ip']}   ·   {room['players']}/{room['max']} souls",
                  (panel.x + 360, y + 12), INK_SOFT, size=24, italic=True)
-            b = Button((panel.right - 150, y, 126, 42), "Full" if full else "Join", not full)
+            b = Button((panel.right - 150, y, 126, 42), "Full" if full else "Enter", not full)
             b.draw(screen)
             self.room_buttons.append((b, room))
             pygame.draw.line(screen, PARCH_DARK, (panel.x + 20, y + 50), (panel.right - 20, y + 50), 1)
-        text(screen, "Or join by IP:", (MARGIN, HEIGHT - 128), GRAY, size=26, italic=True)
+        text(screen, "Or seek a hall by its address:", (MARGIN, HEIGHT - 128), GRAY, size=26, italic=True)
         self.ip.draw(screen)
         self.join_ip.enabled = bool(self.ip.value.strip())
         self.join_ip.draw(screen)
         if self.app.local_ip:
-            text(screen, f"Your IP: {self.app.local_ip}", (WIDTH - 250, HEIGHT - 84), GRAY, size=26)
+            label = f"Thine address: {self.app.local_ip}"
+            text(screen, label, (WIDTH - MARGIN - font(26).size(label)[0], HEIGHT - 84), GRAY, size=26)
         self.draw_error(screen)
 
 
-def topics_line(categories, difficulty):
-    """'History, Art · Hard' for a room's question settings."""
-    if not categories:
-        return "Built-in questions"
-    return ", ".join(categories) + f"  ·  {(difficulty or 'any').capitalize()}"
+RANKS = {"any": "Any", "easy": "Squire", "medium": "Knight", "hard": "King"}
+
+
+def rank_name(difficulty):
+    """OpenTDB difficulty as a rank of trial: easy -> Squire, and so on."""
+    return RANKS.get(difficulty or "any", (difficulty or "any").capitalize())
+
+
+def topics_line(category, difficulty):
+    """'History · Knight's trial' for a hall's question settings."""
+    if not category:
+        return "The realm's own riddles"
+    if (difficulty or "any") == "any":
+        return f"{category}  ·  trials of every rank"
+    return f"{category}  ·  {rank_name(difficulty)}'s trial"
 
 
 class CampaignSettings(Scene):
-    """Popup before creating a room: which question categories and difficulty.
-    The host's game fetches matching questions from opentdb.com when the room
-    opens; nothing is saved."""
-
-    LEVELS = [("any", "Any"), ("easy", "Easy"), ("medium", "Medium"), ("hard", "Hard")]
+    """Popup before creating a room: the question category (one, or all
+    mixed) and difficulty. The host's game fetches matching questions from
+    opentdb.com when the room opens; nothing is saved."""
 
     def __init__(self, app):
         super().__init__(app)
         self.behind = Lobby(app)
-        self.panel = pygame.Rect(150, 64, 600, 470)
+        self.panel = pygame.Rect(150, 56, 600, 488)
         x0 = self.panel.x + 30
-        self.category_rects = {name: pygame.Rect(x0 + i * 184, self.panel.y + 126, 172, 52)
-                               for i, name in enumerate(opentdb.CATEGORIES)}
-        self.level_rects = {key: pygame.Rect(x0 + i * 136, self.panel.y + 244, 126, 48)
-                            for i, (key, _) in enumerate(self.LEVELS)}
+        self.lore = Dropdown((x0, self.panel.y + 122, self.panel.w - 60, 46), opentdb.CHOICES,
+                             app.campaign["category"], visible=8)
+        self.level_rects = {key: pygame.Rect(x0 + i * 136, self.panel.y + 258, 126, 48)
+                            for i, key in enumerate(opentdb.DIFFICULTIES)}
         with_bot = (app.settings_for or {}).get("with_bot")
-        self.back = Button((x0, self.panel.bottom - 76, 160, 50), "Back")
-        self.go = Button((self.panel.right - 30 - 250, self.panel.bottom - 76, 250, 50),
-                         "Play vs bot" if with_bot else "Create room")
+        self.back = Button((x0, self.panel.bottom - 72, 170, 50), "Turn back")
+        self.go = Button((self.panel.right - 30 - 270, self.panel.bottom - 72, 270, 50),
+                         "Face the automaton" if with_bot else "Raise the hall")
 
     def handle(self, event):
         c = self.app.campaign
+        if self.lore.handle(event):
+            c["category"] = self.lore.selected
+            return
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            for name, rect in self.category_rects.items():
-                if rect.collidepoint(event.pos):
-                    chosen = c["categories"]
-                    if name in chosen and len(chosen) > 1:        # keep at least one
-                        chosen.remove(name)
-                    elif name not in chosen:
-                        chosen.append(name)
-                        chosen.sort(key=list(opentdb.CATEGORIES).index)
             for key, rect in self.level_rects.items():
                 if rect.collidepoint(event.pos):
                     c["difficulty"] = key
@@ -177,48 +181,39 @@ class CampaignSettings(Scene):
             self.app.close_settings()
         elif self.go.clicked(event):
             self.app.create_room(with_bot=self.app.settings_for["with_bot"],
-                                 categories=list(c["categories"]), difficulty=c["difficulty"])
+                                 category=c["category"], difficulty=c["difficulty"])
 
     def draw(self, screen):
         self.behind.draw(screen)
         dim(screen, 170)
         c = self.app.campaign
-        p = draw_panel(screen, self.panel, header="Prepare your campaign", header_h=44)
+        p = draw_panel(screen, self.panel, header="Prepare thy campaign", header_h=44)
         mouse = pygame.mouse.get_pos()
 
-        text(screen, "Categories", (p.x + 30, p.y + 64), INK, size=32, bold=True)
-        text(screen, "pick one or more", (p.x + 180, p.y + 72), INK_SOFT, size=24, italic=True)
-        for name, rect in self.category_rects.items():
-            on = name in c["categories"]
-            fill = (196, 160, 98) if on else ((224, 204, 160) if rect.collidepoint(mouse)
-                                              else PARCH_DARK)
-            pygame.draw.rect(screen, fill, rect, border_radius=4)
-            pygame.draw.rect(screen, INK if on else INK_SOFT, rect, 3 if on else 1, border_radius=4)
-            box = pygame.Rect(rect.x + 14, rect.centery - 11, 22, 22)
-            pygame.draw.rect(screen, (240, 228, 198), box)
-            pygame.draw.rect(screen, INK, box, 2)
-            if on:
-                pygame.draw.lines(screen, OXBLOOD, False, [(box.x + 4, box.centery),
-                                  (box.x + 9, box.bottom - 5), (box.right - 3, box.y + 3)], 3)
-            label, size = fit_text(name, rect.right - box.right - 22, 30, 22)
-            text(screen, label, (box.right + 12, rect.centery - font(size, on).get_height() // 2),
-                 INK, size=size, bold=on)
+        text(screen, "The lore", (p.x + 30, p.y + 62), INK, size=32, bold=True)
+        text(screen, "In what learning shall thy foes be tested? Choose one, or all.",
+             (p.x + 30, p.y + 94), INK_SOFT, size=22, italic=True)
+        self.lore.draw(screen)
 
-        text(screen, "Difficulty", (p.x + 30, p.y + 196), INK, size=32, bold=True)
-        for key, label in self.LEVELS:
-            rect = self.level_rects[key]
+        text(screen, "The rank of trial", (p.x + 30, p.y + 196), INK, size=32, bold=True)
+        text(screen, "How grievous shall the riddles be?", (p.x + 30, p.y + 228), INK_SOFT,
+             size=22, italic=True)
+        for key, rect in self.level_rects.items():
             on = c["difficulty"] == key
             fill = OXBLOOD if on else ((224, 204, 160) if rect.collidepoint(mouse) else PARCH_DARK)
             pygame.draw.rect(screen, fill, rect, border_radius=4)
             pygame.draw.rect(screen, GOLD if on else INK_SOFT, rect, 2 if on else 1, border_radius=4)
-            text(screen, label, rect.center, GOLD if on else INK, size=28, center=True, bold=on)
+            text(screen, rank_name(key), rect.center, GOLD if on else INK, size=28, center=True,
+                 bold=on)
 
         for i, line in enumerate(wrap_text(
-                "Questions are fetched from opentdb.com when the room opens, and nothing is "
-                "saved. Without internet the game uses its built-in questions.", 24, p.w - 60)):
-            text(screen, line, (p.x + 30, p.y + 318 + i * 24), INK_SOFT, size=24, italic=True)
+                "Messengers shall ride to opentdb.com for thy riddles when the hall is raised, "
+                "and nothing shall be kept thereafter. Should they fail to return, the realm's "
+                "own riddles shall serve.", 22, p.w - 60)):
+            text(screen, line, (p.x + 30, p.y + 330 + i * 22), INK_SOFT, size=22, italic=True)
         self.back.draw(screen, WOOD_RED)
         self.go.draw(screen, WOOD_GREEN)
+        self.lore.draw_list(screen)          # last, so the open list lies on top
 
 
 class Room(Scene):
@@ -227,10 +222,10 @@ class Room(Scene):
     def __init__(self, app):
         super().__init__(app)
         y = 420
-        self.start = Button((MARGIN, y, 190, 50), "Start")
-        self.add_bot = Button((MARGIN + 206, y, 170, 50), "Add bot")
-        self.remove_bot = Button((MARGIN + 392, y, 190, 50), "Remove bot")
-        self.leave = Button((WIDTH - MARGIN - 160, y, 160, 50), "Leave")
+        self.start = Button((MARGIN, y, 190, 50), "To battle!")
+        self.add_bot = Button((MARGIN + 204, y, 196, 50), "Summon bot")
+        self.remove_bot = Button((MARGIN + 414, y, 196, 50), "Dismiss bot")
+        self.leave = Button((WIDTH - MARGIN - 160, y, 160, 50), "Depart")
 
     def handle(self, event):
         lobby = self.app.lobby or {}
@@ -249,7 +244,7 @@ class Room(Scene):
         lobby = self.app.lobby or {}
         text(screen, lobby.get("room", "Connecting..."), (MARGIN, 18), GOLD, size=52, bold=True)
         if self.app.server:
-            text(screen, f"Others can join at {self.app.local_ip}", (MARGIN, 70), GRAY, size=26,
+            text(screen, f"Others may enter at {self.app.local_ip}", (MARGIN, 70), GRAY, size=26,
                  italic=True)
         panel = draw_panel(screen, (MARGIN, 110, 560, 280), header="The company")
         players = lobby.get("players", [])
@@ -258,17 +253,17 @@ class Room(Scene):
             draw_shield(screen, (panel.x + 40, y + 14), PLAYER_COLORS[p["id"]], size=14)
             tag = []
             if p["id"] == lobby.get("host"):
-                tag.append("host")
+                tag.append("lord of the hall")
             if p["id"] == self.app.you:
-                tag.append("you")
+                tag.append("thyself")
             if p.get("bot"):
-                tag.append("computer")
+                tag.append("a thing of gears")
             r = text(screen, p["name"], (panel.x + 72, y), INK, size=34, bold=True)
             if tag:
                 text(screen, ", ".join(tag), (r.right + 14, y + 8), INK_SOFT, size=24, italic=True)
         for i in range(len(players), protocol.MAX_PLAYERS):
             y = panel.y + 66 + i * 62
-            text(screen, "an empty seat...", (panel.x + 72, y + 4), PARCH_DARK, size=28, italic=True)
+            text(screen, "an empty seat at the table...", (panel.x + 72, y + 4), PARCH_DARK, size=28, italic=True)
         questions = lobby.get("questions") or {}
         loading = questions.get("status") == "loading"
         self.draw_questions(screen, questions)
@@ -281,41 +276,42 @@ class Room(Scene):
             self.remove_bot.enabled = any(p.get("bot") for p in players)
             self.remove_bot.draw(screen)
             if len(players) < protocol.MIN_PLAYERS:
-                text(screen, "Waiting for another player, or add a bot to play alone.",
+                text(screen, "Await another soul, or summon a bot to fight alone.",
                      (MARGIN, 486), GRAY, size=26, italic=True)
             elif loading:
-                text(screen, "Gathering questions... Start unlocks when the first ones arrive.",
+                text(screen, "The messengers ride... ye may march once the first riddles arrive.",
                      (MARGIN, 486), GRAY, size=26, italic=True)
         else:
-            text(screen, "Waiting for the host to start...", (MARGIN, 486), GRAY, size=26,
+            text(screen, "Await the command of the lord of the hall...", (MARGIN, 486), GRAY, size=26,
                  italic=True)
         self.leave.draw(screen, WOOD_RED)
         self.draw_error(screen)
 
     def draw_questions(self, screen, info):
-        """Right-hand sheet: the room's categories, difficulty and question status."""
-        p = draw_panel(screen, (600, 110, WIDTH - MARGIN - 600, 280), header="The questions")
+        """Right-hand sheet: the hall's lore, rank of trial and riddle status."""
+        p = draw_panel(screen, (600, 110, WIDTH - MARGIN - 600, 280), header="The riddles")
         x, y = p.x + 22, p.y + 60
-        cats = info.get("categories") or []
-        for name in cats or ["Built-in questions"]:
+        category = info.get("category")
+        for line in wrap_text(category or "The realm's own riddles", 28, p.w - 60, bold=True):
             pygame.draw.polygon(screen, OXBLOOD, [(x, y + 10), (x + 6, y + 4), (x + 12, y + 10),
                                                   (x + 6, y + 16)])
-            text(screen, name, (x + 22, y), INK, size=28, bold=True)
+            text(screen, line, (x + 22, y), INK, size=28, bold=True)
             y += 30
-        if cats:
-            text(screen, f"Difficulty: {(info.get('difficulty') or 'any').capitalize()}",
+        if category:
+            rank = info.get("difficulty") or "any"
+            text(screen, "Trials of every rank" if rank == "any" else f"Rank: {rank_name(rank)}",
                  (x, y + 6), INK_SOFT, size=24, italic=True)
             y += 32
         status, count = info.get("status"), info.get("count", 0)
         if status == "loading":
             dots = "." * (pygame.time.get_ticks() // 400 % 4)
-            msg = f"Fetching from opentdb.com{dots}"
+            msg = f"Messengers ride to opentdb.com{dots}"
         elif status == "ready":
-            msg = f"{count} questions ready" + (" (more coming)" if info.get("loading") else "")
+            msg = f"{count} riddles at hand" + (", more on the road" if info.get("loading") else "")
         elif status == "offline":
-            msg = f"No internet: using the {count} built-in questions"
+            msg = f"The messengers returned not. The realm's own {count} riddles shall serve."
         else:
-            msg = f"{count} built-in questions"
+            msg = f"{count} riddles of the realm"
         for line in wrap_text(msg, 24, p.w - 44):
             text(screen, line, (x, y + 10), (128, 80, 16), size=24, italic=True)
             y += 24
@@ -330,25 +326,25 @@ def result_line(app):
     kind = res.get("kind")
     if kind is None:                                  # opening duel
         if res.get("elapsed") is None:
-            return f"{name(res['winner'])} took {region_name(res['region'])}"
-        return f"{name(res['winner'])} won {region_name(res['region'])} (answered in {res['elapsed']:.1f}s)"
+            return f"{name(res['winner'])} claimeth {region_name(res['region'])}"
+        return f"{name(res['winner'])} winneth {region_name(res['region'])}, answering in {res['elapsed']:.1f}s"
     if kind == "grab":
-        parts = [f"{name(int(p))} took {region_name(r)}" for p, r in res["won"].items()]
-        parts += [f"{name(p)} missed" for p in res["missed"]]
+        parts = [f"{name(int(p))} seizeth {region_name(r)}" for p, r in res["won"].items()]
+        parts += [f"{name(p)} faltered" for p in res["missed"]]
         return ". ".join(parts) + "." if parts else None
     if kind == "skip":
-        return f"{name(res['attacker'])} didn't attack."
+        return f"{name(res['attacker'])} held back this turn."
     att, dfn, region = name(res["attacker"]), name(res["defender"]), region_name(res["region"])
     speed = f" ({res['elapsed']:.1f}s)" if res.get("elapsed") is not None else ""
     if res.get("base_fell"):
-        return f"{dfn}'s base fell! {att} takes all of {dfn}'s land."
+        return f"{dfn}'s castle hath fallen! {att} taketh all of {dfn}'s lands."
     if res["base"]:
         if res["attacker_won"]:
-            return f"{att} destroyed a tower of {dfn}'s base{speed}. Towers left: {res['towers_left']}."
-        return f"{dfn}'s tower holds. Towers left: {res['towers_left']}."
+            return f"{att} toppleth a tower of {dfn}'s castle{speed}. Towers standing: {res['towers_left']}."
+        return f"{dfn}'s tower holdeth! Towers standing: {res['towers_left']}."
     if res["attacker_won"]:
-        return f"{att} took {region} from {dfn}{speed}."
-    return f"{dfn} held {region}."
+        return f"{att} wresteth {region} from {dfn}{speed}."
+    return f"{dfn} holdeth {region}."
 
 
 def owner_map(state):
@@ -389,15 +385,15 @@ class MapPick(Scene):
         draw_background(screen)
         me = self.app.you
         if me in st["pickers"]:
-            text(screen, "Pick your starting region!", (MARGIN, 15), PLAYER_COLORS[me], size=42,
+            text(screen, "Claim thy homeland!", (MARGIN, 15), PLAYER_COLORS[me], size=42,
                  bold=True)
-            hint = ("Picks are secret. The round ends when everyone has picked."
+            hint = ("Thy choice is secret. The round endeth when all have chosen."
                     if st["your_pick"] is None else
-                    f"You picked {region_name(st['your_pick'])}. Waiting for the others...")
+                    f"Thou hast chosen {region_name(st['your_pick'])}. Await the others...")
             text(screen, hint, (MARGIN, 60), GRAY, size=26)
         else:
             names = ", ".join(self.app.player_name(p) for p in st["pickers"])
-            text(screen, f"Waiting for {names} to pick a region...", (MARGIN, 15), size=36,
+            text(screen, f"{names} yet ponder their homeland...", (MARGIN, 15), size=36,
                  bold=True)
         draw_timer(screen, self.app)
         draw_result(screen, self.app)
@@ -452,10 +448,10 @@ class QuestionScene(Scene):
         if first is None:
             return None
         if first == self.app.you:
-            return "You were first!", GREEN_TEXT
+            return "Thou wast first!", GREEN_TEXT
         name = self.app.player_name(first)
         if self.app.you in info["waiting"] and self.can_answer():
-            return f"{name} answered first! Answer anyway to see if you were right.", YELLOW
+            return f"{name} answered first! Answer still, to learn if thou wert right.", YELLOW
         return f"{name} answered first!", YELLOW
 
     def handle(self, event):
@@ -504,7 +500,8 @@ class QuestionScene(Scene):
         self.draw_players(surf, w - 22, 25)
 
         if q.get("category"):
-            label = q["category"] + (f"  ·  {q['difficulty']}" if q.get("difficulty") else "")
+            label = q["category"] + (f"  ·  {rank_name(q['difficulty'])}'s trial"
+                                     if q.get("difficulty") else "")
             text(surf, label, (28, 58), INK_SOFT, size=24, italic=True)
         for i, line in enumerate(lines):
             text(surf, line, (28, top + i * 36), INK, size=36, bold=True)
@@ -573,7 +570,7 @@ class Duel(QuestionScene):
         return self.app.state["duel"]["question"]
 
     def title(self):
-        return f"Bonus question for {region_name(self.app.state['duel']['region'])}"
+        return f"A duel for {region_name(self.app.state['duel']['region'])}"
 
     def players(self):
         return self.app.state["duel"]["players"]
@@ -591,11 +588,11 @@ class Duel(QuestionScene):
             return self.reveal_status(duel) or ("", GRAY)
         if me in duel["players"]:
             if me in duel["locked_out"]:
-                return "Wrong! You're locked out of this question.", RED_TEXT
+                return "False! Thou art barred from this riddle.", RED_TEXT
             if not self.can_answer():
-                return "Answer sent...", GRAY
-            return "Fastest correct answer wins!", YELLOW
-        return "You're watching this fight.", GRAY
+                return "Thine answer is sent...", GRAY
+            return "The swiftest true answer wins!", YELLOW
+        return "Thou watchest this duel.", GRAY
 
     def draw_map(self, screen):
         st = self.app.state
@@ -606,12 +603,12 @@ class Done(Scene):
     def draw(self, screen):
         st = self.app.state
         draw_background(screen)
-        text(screen, "Starting regions are set!", (MARGIN, 15), size=42, bold=True)
+        text(screen, "The homelands are claimed!", (MARGIN, 15), size=42, bold=True)
         owners = owner_map(st)
         parts = [f"{self.app.player_name(p)}: {region_name(r)}"
                  for r, p in sorted(owners.items(), key=lambda kv: kv[1])]
         text(screen, "   ".join(parts), (MARGIN, 60), GRAY, size=26)
-        text(screen, "These are your bases. The land grab begins...", (MARGIN, 100), YELLOW, size=26)
+        text(screen, "Here stand thy castles. Now the scramble for land begins...", (MARGIN, 100), YELLOW, size=26)
         draw_board(screen, owners, bases={r: 3 for r in owners})
 
 
@@ -638,14 +635,14 @@ class GrabSelect(Scene):
         draw_background(screen)
         mine = st["selections"].get(str(me))
         if st["selectable"] or mine is not None:
-            text(screen, "Land grab: choose a free region next to your land",
+            text(screen, "Seize free land beside thine own",
                  (MARGIN, 15), PLAYER_COLORS[me], size=36, bold=True)
-            hint = ("Hatched lands are locked by other players. You can change your choice."
+            hint = ("Hatched lands are claimed by others. Thou mayst change thy mind."
                     if mine is None else
-                    f"You chose {region_name(mine)}. A question follows when the time is up.")
+                    f"Thou hast marked {region_name(mine)}. A riddle follows when the sand runs out.")
         else:
-            text(screen, "Land grab", (MARGIN, 15), size=36, bold=True)
-            hint = "No free region next to your land. Waiting for the others..."
+            text(screen, "The scramble for land", (MARGIN, 15), size=36, bold=True)
+            hint = "No free land borders thine. Await the others..."
         text(screen, hint, (MARGIN, 60), GRAY, size=26)
         draw_timer(screen, self.app)
         draw_result(screen, self.app)
@@ -664,7 +661,7 @@ class GrabQuestion(QuestionScene):
 
     def title(self):
         mine = self.app.state["selections"].get(str(self.app.you))
-        return "Land grab" + (f" for {region_name(mine)}" if mine is not None else "")
+        return "A riddle" + (f" for {region_name(mine)}" if mine is not None else " of the land")
 
     def players(self):
         return self.app.state["answering"]
@@ -679,11 +676,11 @@ class GrabQuestion(QuestionScene):
         waiting = [self.app.player_name(p) for p in st["answering"] if p not in st["answered"]]
         if me in st["answering"]:
             if self.can_answer():
-                return "Answer correctly to take your region!", YELLOW
+                return "Answer true to take thy land!", YELLOW
             if waiting:
-                return f"Answer sent. Waiting for {', '.join(waiting)}...", GRAY
-            return "Answer sent...", GRAY
-        return "You didn't choose a region this round. Watching.", GRAY
+                return f"Thine answer is sent. Awaiting {', '.join(waiting)}...", GRAY
+            return "Thine answer is sent...", GRAY
+        return "Thou markedst no land this round. Watch and wait.", GRAY
 
     def draw_map(self, screen):
         st = self.app.state
@@ -711,15 +708,15 @@ class WarSelect(Scene):
         target = st["selections"].get(str(attacker))
         draw_background(screen)
         if attacker == me:
-            text(screen, "Your turn: attack a region next to your land",
+            text(screen, "Thy turn! March upon a land beside thine own",
                  (MARGIN, 15), PLAYER_COLORS[me], size=36, bold=True)
-            hint = ("Attacking a base starts a 3-tower siege." if target is None else
-                    f"Target: {region_name(target)}. You can change it until the time is up.")
+            hint = ("Strike at a castle to lay siege to its three towers." if target is None else
+                    f"Thy target: {region_name(target)}. Thou mayst change it ere the sand runs out.")
         else:
-            text(screen, f"{self.app.player_name(attacker)} is choosing a target...",
+            text(screen, f"{self.app.player_name(attacker)} chooseth a target...",
                  (MARGIN, 15), PLAYER_COLORS[attacker], size=36, bold=True)
             hint = ("" if target is None else
-                    f"Target: {region_name(target)} ({self.app.player_name(owner_map(st)[target])})")
+                    f"Their target: {region_name(target)}, held by {self.app.player_name(owner_map(st)[target])}")
         text(screen, hint, (MARGIN, 60), GRAY, size=26)
         draw_timer(screen, self.app)
         draw_result(screen, self.app)
@@ -744,8 +741,8 @@ class WarDuel(QuestionScene):
         a = st["attack"]
         if a["base"]:
             towers = st["towers"].get(str(a["defender"]), 0)
-            return f"Siege: tower {a['tower_q']} of 3 ({towers} standing)"
-        return f"Attack on {region_name(a['region'])}"
+            return f"Siege! Tower {a['tower_q']} of 3, {towers} yet standing"
+        return f"Battle for {region_name(a['region'])}"
 
     def may_answer(self):
         a = self.app.state["attack"]
@@ -761,13 +758,13 @@ class WarDuel(QuestionScene):
         att, dfn = (self.app.player_name(p) for p in self.fighters())
         if me in self.fighters():
             if me in a["locked_out"]:
-                return "Wrong! You're locked out of this question.", RED_TEXT
+                return "False! Thou art barred from this riddle.", RED_TEXT
             if not self.can_answer():
-                return "Answer sent...", GRAY
+                return "Thine answer is sent...", GRAY
             if me == self.fighters()[0]:
-                return "You attack! Fastest correct answer wins.", YELLOW
-            return f"{att} attacks you! Fastest correct answer wins.", YELLOW
-        return f"{att} attacks {dfn}. You're watching.", GRAY
+                return "Thou attackest! The swiftest true answer wins.", YELLOW
+            return f"{att} marcheth upon thee! The swiftest true answer wins.", YELLOW
+        return f"{att} marcheth upon {dfn}. Thou watchest.", GRAY
 
     def draw_map(self, screen):
         conquest_board(screen, self.app, contested=self.app.state["attack"]["region"])
@@ -776,7 +773,7 @@ class WarDuel(QuestionScene):
 class GameOver(Scene):
     def __init__(self, app):
         super().__init__(app)
-        self.leave = Button((WIDTH - MARGIN - 200, 22, 200, 46), "Back to lobby")
+        self.leave = Button((WIDTH - MARGIN - 200, 22, 200, 46), "Return to the halls")
 
     def handle(self, event):
         if self.leave.clicked(event):
@@ -787,7 +784,7 @@ class GameOver(Scene):
         winner = st["winner"]
         draw_background(screen)
         if winner is None:
-            text(screen, "Game over", (MARGIN, 14), GOLD, size=52, bold=True)
+            text(screen, "The war is ended", (MARGIN, 14), GOLD, size=52, bold=True)
         else:
             text(screen, f"{self.app.player_name(winner)} conquers the realm!", (MARGIN, 14),
                  PLAYER_COLORS[winner], size=52, bold=True)
@@ -809,13 +806,13 @@ def answer_rows(res):
     rows = []
     for a in answers:
         if not a["correct"]:
-            detail = f"wrong ({a['elapsed']:.1f}s)"
+            detail = f"false ({a['elapsed']:.1f}s)"
         elif a.get("late") and fastest is not None:
-            detail = f"correct, but {a['elapsed'] - fastest:.1f}s slower"
+            detail = f"true, but {a['elapsed'] - fastest:.1f}s too slow"
         elif race and a["elapsed"] == fastest:
-            detail = f"correct in {a['elapsed']:.1f}s - FIRST!"
+            detail = f"true in {a['elapsed']:.1f}s - FIRST!"
         else:
-            detail = f"correct in {a['elapsed']:.1f}s"
+            detail = f"true in {a['elapsed']:.1f}s"
         rows.append((a["player"], a["correct"], detail))
     return rows
 

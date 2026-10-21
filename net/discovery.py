@@ -26,7 +26,7 @@ class RoomAnnouncer:
                 msg = json.dumps({
                     "tag": TAG, "room": self.server.room_name, "port": self.server.port,
                     "players": self.server.player_count(), "max": protocol.MAX_PLAYERS,
-                    "topics": self.server.categories, "difficulty": self.server.difficulty,
+                    "category": self.server.category, "difficulty": self.server.difficulty,
                 }).encode("utf-8")
                 for addr in ("<broadcast>", "127.0.0.1"):
                     try:
@@ -57,7 +57,7 @@ class RoomBrowser:
             self.sock.settimeout(0.5)
             threading.Thread(target=self._loop, daemon=True).start()
         except OSError as e:
-            self.error = f"Room discovery unavailable ({e.strerror}); join by IP"
+            self.error = f"Thou canst not hear other halls ({e.strerror}); seek one by its address"
             self.running = False
 
     def _loop(self):

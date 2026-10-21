@@ -40,24 +40,45 @@ def test_public_view_has_category_but_never_the_answer():
 
 # ---- fetching ---------------------------------------------------------------
 
-def test_fetch_one_request_per_category_with_difficulty_and_rate_limit():
-    calls, sleeps, batches = [], [], []
+def test_fetch_one_category_with_difficulty():
+    calls, batches = [], []
 
     def get(params):
         calls.append(dict(params))
         return {"response_code": 0, "results": [fake_item(i) for i in range(3)]}
 
-    total = opentdb.fetch(["History", "Art"], "hard", random.Random(1),
-                          lambda name, b: batches.append((name, len(b))), get=get,
-                          sleep=sleeps.append)
-    assert total == 6 and batches == [("History", 3), ("Art", 3)]
-    assert [c["category"] for c in calls] == [23, 25]
-    assert all(c["difficulty"] == "hard" and c["type"] == "multiple" for c in calls)
-    assert sleeps == [opentdb.REQUEST_GAP]          # waits between requests, not before the first
+    total = opentdb.fetch("History", "hard", random.Random(1), batches.append, get=get,
+                          sleep=lambda _: None)
+    assert total == 3 and len(batches) == 1 and len(calls) == 1
+    assert calls[0]["category"] == 23 and calls[0]["difficulty"] == "hard"
+    assert calls[0]["type"] == "multiple" and calls[0]["amount"] == opentdb.AMOUNT
 
 
-def test_fetch_any_difficulty_sends_no_filter_and_asks_for_fewer_when_short():
+def test_fetch_all_categories_sends_no_category_or_difficulty_filter():
     calls = []
+
+    def get(params):
+        calls.append(dict(params))
+        return {"response_code": 0, "results": [fake_item()]}
+
+    opentdb.fetch(opentdb.ALL, "any", random.Random(1), lambda b: None, get=get)
+    assert "category" not in calls[0] and "difficulty" not in calls[0]
+
+
+def test_every_dropdown_choice_is_one_category_or_all():
+    assert opentdb.CHOICES[0] == opentdb.ALL
+    assert set(opentdb.CHOICES[1:]) == set(opentdb.CATEGORIES) and len(opentdb.CATEGORIES) == 24
+
+
+def test_category_names_lose_their_prefixes():
+    assert opentdb.clean_category("Entertainment: Video Games") == "Video Games"
+    assert opentdb.clean_category("Science: Computers") == "Computers"
+    assert opentdb.clean_category("Entertainment: Japanese Anime & Manga") == "Anime & Manga"
+    assert opentdb.clean_category("History") == "History"
+
+
+def test_fetch_asks_for_fewer_when_short_and_waits_between_requests():
+    calls, sleeps = [], []
 
     def get(params):
         calls.append(dict(params))
@@ -65,10 +86,10 @@ def test_fetch_any_difficulty_sends_no_filter_and_asks_for_fewer_when_short():
             return {"response_code": 1, "results": []}
         return {"response_code": 0, "results": [fake_item(i) for i in range(params["amount"])]}
 
-    total = opentdb.fetch(["Art"], "any", random.Random(1), lambda *_: None, get=get,
-                          sleep=lambda _: None)
-    assert "difficulty" not in calls[0]
+    total = opentdb.fetch("Art", "hard", random.Random(1), lambda b: None, get=get,
+                          sleep=sleeps.append)
     assert [c["amount"] for c in calls] == [50, 25, 12] and total == 12
+    assert sleeps == [opentdb.REQUEST_GAP] * 2      # not before the first request
 
 
 def test_fetch_gives_up_on_endless_rate_limiting():
@@ -78,7 +99,8 @@ def test_fetch_gives_up_on_endless_rate_limiting():
         n.append(1)
         return {"response_code": 5}
 
-    opentdb.fetch(["Art"], "any", random.Random(1), lambda *_: None, get=get, sleep=lambda _: None)
+    assert opentdb.fetch("Art", "any", random.Random(1), lambda b: None, get=get,
+                         sleep=lambda _: None) == 0
     assert len(n) == opentdb.MAX_REQUESTS
 
 
@@ -121,13 +143,13 @@ def wait_lobby(client, pred, timeout=3.0):
 def test_server_fetches_for_the_room_and_blocks_start_until_questions_arrive():
     release = []
 
-    def fake_fetch(categories, difficulty, rng, on_batch, should_stop):
-        assert categories == ["Mythology"] and difficulty == "easy"
+    def fake_fetch(category, difficulty, rng, on_batch, should_stop):
+        assert category == "Mythology" and difficulty == "easy"
         while not release:
             time.sleep(0.01)
-        on_batch("Mythology", [opentdb.convert(fake_item(i), rng) for i in range(4)])
+        on_batch([opentdb.convert(fake_item(i), rng) for i in range(4)])
 
-    server = GameServer("room", port=5598, categories=["Mythology"], difficulty="easy",
+    server = GameServer("room", port=5598, category="Mythology", difficulty="easy",
                         fetch=fake_fetch)
     server.start()
     try:
@@ -153,7 +175,7 @@ def test_server_offline_falls_back_to_builtin_questions():
     def offline(*args, **kwargs):
         raise OSError("no internet")
 
-    server = GameServer("room", port=5597, categories=["Art"], fetch=offline)
+    server = GameServer("room", port=5597, category=opentdb.ALL, fetch=offline)
     server.start()
     try:
         a = GameClient("127.0.0.1", 5597, "Ana")

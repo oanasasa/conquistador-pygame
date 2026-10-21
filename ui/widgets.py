@@ -223,6 +223,95 @@ class TextInput:
              color, italic=not self.value)
 
 
+class Dropdown:
+    """A parchment dropdown: click to open a scrollable list, click an entry to
+    choose it. While open it takes all clicks, so the list can overlap others."""
+
+    ROW = 32
+
+    def __init__(self, rect, options, selected, visible=8):
+        self.rect = pygame.Rect(rect)
+        self.options = list(options)
+        self.selected = selected
+        self.visible = min(visible, len(self.options))
+        self.open = False
+        self.scroll = 0
+
+    def list_rect(self):
+        return pygame.Rect(self.rect.x, self.rect.bottom + 2, self.rect.w, self.ROW * self.visible)
+
+    def _show_selected(self):
+        i = self.options.index(self.selected) if self.selected in self.options else 0
+        self.scroll = max(0, min(i - self.visible // 2, len(self.options) - self.visible))
+
+    def handle(self, event):
+        """Returns True if the event was used (so nothing behind should get it)."""
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.rect.collidepoint(event.pos):
+                self.open = not self.open
+                if self.open:
+                    self._show_selected()
+                return True
+            if self.open:
+                lr = self.list_rect()
+                if lr.collidepoint(event.pos):
+                    self.selected = self.options[self.scroll + (event.pos[1] - lr.y) // self.ROW]
+                self.open = False
+                return True
+        elif event.type == pygame.MOUSEWHEEL and self.open:
+            self.scroll = max(0, min(self.scroll - event.y, len(self.options) - self.visible))
+            return True
+        return False
+
+    def draw(self, screen):
+        """The closed box; call draw_list() last so the open list sits on top."""
+        r = self.rect
+        hover = r.collidepoint(pygame.mouse.get_pos())
+        screen.blit(parchment(), r, pygame.Rect(60, 60, *r.size))
+        if hover or self.open:
+            shade = pygame.Surface(r.size, pygame.SRCALPHA)
+            shade.fill((120, 80, 30, 30))
+            screen.blit(shade, r)
+        pygame.draw.rect(screen, GOLD if self.open else INK, r, 2)
+        text(screen, self.selected, (r.x + 14, r.centery - font(30, True).get_height() // 2), INK,
+             size=30, bold=True)
+        ax, ay = r.right - 26, r.centery
+        tip = [(ax - 8, ay - 4), (ax + 8, ay - 4), (ax, ay + 6)] if not self.open else \
+              [(ax - 8, ay + 4), (ax + 8, ay + 4), (ax, ay - 6)]
+        pygame.draw.polygon(screen, WAX, tip)
+        pygame.draw.line(screen, INK_SOFT, (r.right - 46, r.y + 8), (r.right - 46, r.bottom - 8), 1)
+
+    def draw_list(self, screen):
+        if not self.open:
+            return
+        lr = self.list_rect()
+        shadow = pygame.Surface(lr.size, pygame.SRCALPHA)
+        shadow.fill((0, 0, 0, 90))
+        screen.blit(shadow, lr.move(4, 5))
+        screen.blit(parchment(), lr, pygame.Rect(120, 30, *lr.size))
+        mouse = pygame.mouse.get_pos()
+        for i in range(self.visible):
+            option = self.options[self.scroll + i]
+            row = pygame.Rect(lr.x, lr.y + i * self.ROW, lr.w - 14, self.ROW)
+            if option == self.selected:
+                pygame.draw.rect(screen, OXBLOOD, row)
+                color = GOLD
+            else:
+                if row.collidepoint(mouse):
+                    pygame.draw.rect(screen, PARCH_DARK, row)
+                color = INK
+            text(screen, option, (row.x + 14, row.centery - font(28).get_height() // 2), color,
+                 size=28, bold=option == self.selected)
+        # scroll bar
+        track = pygame.Rect(lr.right - 12, lr.y + 4, 6, lr.h - 8)
+        pygame.draw.rect(screen, PARCH_DARK, track)
+        span = len(self.options)
+        thumb_h = max(18, track.h * self.visible // span)
+        thumb_y = track.y + (track.h - thumb_h) * self.scroll // max(1, span - self.visible)
+        pygame.draw.rect(screen, INK_SOFT, (track.x, thumb_y, track.w, thumb_h))
+        pygame.draw.rect(screen, INK, lr, 2)
+
+
 def draw_timer(screen, seconds, center=(WIDTH - MARGIN - 34, 40), r=26):
     """Seconds left inside a gold ring."""
     pygame.draw.circle(screen, (24, 16, 10), center, r)

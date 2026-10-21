@@ -116,12 +116,15 @@ These apply to every duel, both the opening bonus questions and the war duels:
 
 - Questions must be general knowledge with short, unambiguous answers.
 - Each question has three or four choices with one correct answer.
-- Before creating a room, the host chooses the question categories (History,
-  Art, Mythology; at least one) and the difficulty (Any, Easy, Medium or Hard).
-  Questions are then fetched from the Open Trivia Database (opentdb.com). The
-  room can start once the first questions have arrived. Without internet the
-  game uses its built-in questions.
-- The question card shows each question's category and difficulty.
+- Before creating a room, the host picks the lore from a list of all Open
+  Trivia Database categories (History, Music, Geography, Video Games and so on):
+  either one category, or all of them mixed. Categories can't be combined.
+- The host also picks the rank of trial: Any, Squire (easy), Knight (medium) or
+  King (hard).
+- Questions are then fetched from the Open Trivia Database (opentdb.com). The
+  room can start once they have arrived. Without internet the game uses its
+  built-in questions.
+- The question card shows each question's category and rank of trial.
 - Built-in questions are stored in `data/questions.json` and marked
   `"reviewed": true` only after the owner has checked them.
 

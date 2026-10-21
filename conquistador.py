@@ -33,7 +33,7 @@ class App:
         self.client = None
         self.error = None
         self.settings_for = None     # {"with_bot": bool} while the campaign popup is open
-        self.campaign = {"categories": list(opentdb.CATEGORIES), "difficulty": "any"}
+        self.campaign = {"category": opentdb.ALL, "difficulty": "any"}
         self._reset_session()
         self.scene_key = None
         self.scene = None
@@ -55,20 +55,20 @@ class App:
         self.error = self.browser.error
 
     def open_settings(self, with_bot=False):
-        """Ask for categories and difficulty before creating a room."""
+        """Ask for the question category and difficulty before creating a room."""
         self.error = None
         self.settings_for = {"with_bot": with_bot}
 
     def close_settings(self):
         self.settings_for = None
 
-    def create_room(self, with_bot=False, categories=(), difficulty="any"):
+    def create_room(self, with_bot=False, category=None, difficulty="any"):
         self.settings_for = None
-        server = GameServer(f"{self.name}'s room", categories=categories, difficulty=difficulty)
+        server = GameServer(f"{self.name}'s hall", category=category, difficulty=difficulty)
         try:
             server.start()
         except OSError:
-            self.error = f"Can't host: port {protocol.GAME_PORT} is already in use"
+            self.error = f"Thou canst not raise a hall: port {protocol.GAME_PORT} is already taken"
             return
         self.server = server
         self.announcer = RoomAnnouncer(server)
@@ -81,7 +81,7 @@ class App:
         try:
             self.client = GameClient(ip, port, self.name)
         except OSError:
-            self.error = f"Could not connect to {ip}"
+            self.error = f"No hall answered at {ip}"
             self._stop_hosting()
 
     def leave(self):
@@ -141,7 +141,7 @@ class App:
             elif kind == "error":
                 self.error = msg["msg"]
             elif kind == "disconnected":
-                error = self.error or "Disconnected from the room"
+                error = self.error or "Thou wast parted from the hall"
                 self.leave()
                 self.error = error
                 return

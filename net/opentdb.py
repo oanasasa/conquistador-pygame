@@ -1,8 +1,9 @@
 """Questions from the Open Trivia Database (opentdb.com), fetched live.
 
-The host downloads questions for the categories and difficulty chosen when the
-room is created. They are kept in memory only, never written to disk.
-Questions are licensed CC BY-SA 4.0 (credit: Open Trivia Database).
+The host downloads questions for the category and difficulty chosen when the
+room is created: one category, or all of them mixed. They are kept in memory
+only, never written to disk. Questions are licensed CC BY-SA 4.0 (credit:
+Open Trivia Database).
 """
 import base64
 import json
@@ -13,15 +14,32 @@ import urllib.parse
 import urllib.request
 
 API = "https://opentdb.com/api.php"
-CATEGORIES = {"History": 23, "Art": 25, "Mythology": 20}
+ALL = "All categories"
+# OpenTDB category ids, with their "Entertainment:" / "Science:" prefixes dropped.
+CATEGORIES = {
+    "General Knowledge": 9, "Books": 10, "Film": 11, "Music": 12,
+    "Musicals & Theatres": 13, "Television": 14, "Video Games": 15, "Board Games": 16,
+    "Science & Nature": 17, "Computers": 18, "Mathematics": 19, "Mythology": 20,
+    "Sports": 21, "Geography": 22, "History": 23, "Politics": 24, "Art": 25,
+    "Celebrities": 26, "Animals": 27, "Vehicles": 28, "Comics": 29, "Gadgets": 30,
+    "Anime & Manga": 31, "Cartoons & Animations": 32,
+}
+CHOICES = [ALL] + sorted(CATEGORIES)
 DIFFICULTIES = ["any", "easy", "medium", "hard"]
 REQUEST_GAP = 5.2          # OpenTDB allows one request per 5 seconds per IP
-PER_CATEGORY = 50          # the API's maximum per request
-MAX_REQUESTS = 20          # give up after this many, whatever the replies
+AMOUNT = 50                # the API's maximum per request
+MAX_REQUESTS = 8           # give up after this many, whatever the replies
 
 
 def _decode(s):
     return base64.b64decode(s).decode("utf-8").strip()
+
+
+def clean_category(name):
+    """'Entertainment: Video Games' -> 'Video Games'."""
+    name = name.removeprefix("Entertainment: ").removeprefix("Science: ")
+    return {"Japanese Anime & Manga": "Anime & Manga",
+            "Cartoon & Animations": "Cartoons & Animations"}.get(name, name)
 
 
 def convert(item, rng):
@@ -35,8 +53,8 @@ def convert(item, rng):
         return None
     rng.shuffle(choices)
     return {"q": _decode(item["question"]), "choices": choices, "answer": choices.index(correct),
-            "category": _decode(item["category"]), "difficulty": _decode(item["difficulty"]),
-            "source": "opentdb"}
+            "category": clean_category(_decode(item["category"])),
+            "difficulty": _decode(item["difficulty"]), "source": "opentdb"}
 
 
 def _ssl_context():
@@ -58,34 +76,30 @@ def http_get(params):
         return json.load(resp)
 
 
-def fetch(categories, difficulty, rng, on_batch, get=http_get, sleep=time.sleep,
+def fetch(category, difficulty, rng, on_batch, get=http_get, sleep=time.sleep,
           should_stop=lambda: False):
-    """Download questions category by category, calling `on_batch(category,
-    questions)` as each arrives so the game can start before all are in.
-    Returns the number of questions fetched. Raises OSError if offline."""
-    total, requests = 0, 0
-    for name in categories:
-        params = {"amount": PER_CATEGORY, "category": CATEGORIES[name], "type": "multiple",
-                  "encode": "base64"}
-        if difficulty != "any":
-            params["difficulty"] = difficulty
-        while params["amount"] > 0:
-            if requests:
-                sleep(REQUEST_GAP)          # wait between all requests, retries included
-            if should_stop() or requests >= MAX_REQUESTS:
-                return total
-            requests += 1
-            data = get(params)
-            code = data.get("response_code")
-            if code == 0:
-                batch = [q for q in (convert(item, rng) for item in data["results"]) if q]
-                total += len(batch)
-                on_batch(name, batch)
-                break
-            if code == 1:              # fewer questions exist than asked for: ask for fewer
-                params["amount"] //= 2
-            elif code == 5:            # rate limited: wait and retry
-                continue
-            else:
-                break
-    return total
+    """Download one batch of questions for `category` (a name from CATEGORIES,
+    or ALL for every category mixed) and pass it to `on_batch(questions)`.
+    If the category has fewer questions than asked for, asks for fewer.
+    Returns the number fetched. Raises OSError if offline."""
+    params = {"amount": AMOUNT, "type": "multiple", "encode": "base64"}
+    if category != ALL:
+        params["category"] = CATEGORIES[category]
+    if difficulty != "any":
+        params["difficulty"] = difficulty
+    for attempt in range(MAX_REQUESTS):
+        if attempt:
+            sleep(REQUEST_GAP)              # the API's rate limit, retries included
+        if should_stop() or params["amount"] < 1:
+            return 0
+        data = get(params)
+        code = data.get("response_code")
+        if code == 0:
+            batch = [q for q in (convert(item, rng) for item in data["results"]) if q]
+            on_batch(batch)
+            return len(batch)
+        if code == 1:                      # fewer questions exist than asked for
+            params["amount"] //= 2
+        elif code != 5:                    # 5 = rate limited: wait and retry
+            return 0
+    return 0

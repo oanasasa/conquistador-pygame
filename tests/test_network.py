@@ -72,7 +72,7 @@ def test_room_full_and_late_join_rejected(server):
     for c in clients:
         wait_for(c, "welcome")
     extra = GameClient("127.0.0.1", PORT, "Late")
-    assert wait_for(extra, "error")["msg"] == "Room is full"
+    assert wait_for(extra, "error")["msg"] == "The hall is full"
     for c in clients + [extra]:
         c.close()
 

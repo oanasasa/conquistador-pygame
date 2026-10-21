@@ -13,6 +13,12 @@ regions on a map. Questions and answers are game content.
   values into Python source files, README files, or commit messages.
 - Do not generate or add new questions without flagging them for human review.
   Mark any AI-written questions with `"reviewed": false` until the owner approves.
+- Built-in questions live in `data/questions.json`. Questions from the Open
+  Trivia Database are fetched live by the host for the category (one, or all
+  mixed) and difficulty chosen when a room is created (`net/opentdb.py`). The owner approved OpenTDB
+  as a trusted source, so these need no review, but they are kept in memory only:
+  never write them to disk or commit them. They are CC BY-SA 4.0: keep the
+  credit to opentdb.com in the README and in the game.
 
 ## Secrets and credentials
 
@@ -40,11 +46,21 @@ regions on a map. Questions and answers are game content.
 - Keep the game loop, rendering, and question logic in separate modules.
 - Do not add network calls, telemetry, or auto-update code without asking.
   LAN-only networking for rooms is approved (TCP 5555 for the game, UDP 5556
-  for room discovery). No internet calls.
+  for room discovery). The only internet call is the host fetching questions
+  from opentdb.com when a room is created; with no internet it falls back to
+  the built-in questions. Developer tools may download data once
+  (`tools/build_map.py` inputs).
 - The host (`net/server.py`) is authoritative: only it holds answers and judges
   them. Clients receive questions without the `answer` field.
 - Do not change the answer-checking logic to accept answers from the client
   in a way that could be spoofed without explaining the change first.
+
+## In-game text
+
+- Everything the game shows speaks to the player, never about the developer,
+  in an old, medieval voice: "thou/thee/thy", "hath", "ye may", "riddles" for
+  questions, "hall" for room, "rank of trial" for difficulty. Keep it readable;
+  facts that must be exact (licenses, IP addresses, errors) stay plain.
 
 ## Before finishing a task
 

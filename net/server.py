@@ -2,7 +2,13 @@
 
 Only the server holds the question answers. Clients get questions without
 answers, send back a choice index, and the server judges it.
+
+When the room is created with a question category (one, or all mixed), the
+server downloads questions from opentdb.com in the background and keeps them
+in memory only. Without internet it falls back to the built-in questions in
+data/questions.json.
 """
+import random
 import socket
 import threading
 import time
@@ -11,16 +17,25 @@ from game.bot import Bot
 from game.conquest import ConquestPhase
 from game.opening import OpeningPhase
 from game.questions import QuestionDeck, load_questions
-from net import protocol
+from net import opentdb, protocol
 
 SHOW_START_SECONDS = 3   # how long the starting regions show before the land grab
 
 
 class GameServer:
-    def __init__(self, room_name, port=protocol.GAME_PORT):
+    def __init__(self, room_name, port=protocol.GAME_PORT, category=None, difficulty="any",
+                 fetch=opentdb.fetch):
         self.room_name = room_name
         self.port = port
-        self.deck = QuestionDeck(load_questions())
+        self.deck = QuestionDeck(load_questions())     # built-in, until online ones arrive
+        # None: built-in questions only. Otherwise opentdb.ALL or one category name.
+        self.category = category if category in opentdb.CHOICES else None
+        self.difficulty = difficulty if difficulty in opentdb.DIFFICULTIES else "any"
+        self._fetch = fetch
+        # "loading" -> "ready" (online questions arrived) or "offline" (built-in only)
+        self.questions_status = "loading" if self.category else "builtin"
+        self.online_count = 0
+        self.fetch_done = not self.category
         self.lock = threading.Lock()
         self.clients = {}        # player id -> socket
         self.names = {}          # player id -> name (humans and bots)
@@ -41,6 +56,8 @@ class GameServer:
         self.running = True
         threading.Thread(target=self._accept_loop, daemon=True).start()
         threading.Thread(target=self._tick_loop, daemon=True).start()
+        if self.category:
+            threading.Thread(target=self._fetch_questions, daemon=True).start()
 
     def stop(self):
         self.running = False
@@ -73,6 +90,30 @@ class GameServer:
             except OSError:
                 return
             threading.Thread(target=self._client_loop, args=(conn,), daemon=True).start()
+
+    def _fetch_questions(self):
+        """Download questions for the room's category; nothing is saved."""
+        def on_batch(batch):
+            with self.lock:
+                if not batch:
+                    return
+                if self.online_count == 0:
+                    self.deck.replace(batch)       # drop the built-in ones
+                else:
+                    self.deck.add(batch)
+                self.online_count += len(batch)
+                self.questions_status = "ready"
+                self._broadcast_lobby()
+        try:
+            self._fetch(self.category, self.difficulty, random.Random(), on_batch,
+                        should_stop=lambda: not self.running)
+        except (OSError, ValueError, KeyError):
+            pass                                   # offline or a bad reply: keep what we have
+        with self.lock:
+            self.fetch_done = True
+            if self.online_count == 0:
+                self.questions_status = "offline"
+            self._broadcast_lobby()
 
     def _tick_loop(self):
         while self.running:
@@ -126,11 +167,11 @@ class GameServer:
             return None
         name = str(msg.get("name", "")).strip()[:16] or "Player"
         if self.game is not None:
-            self._safe_send(conn, {"t": "error", "msg": "Game already started"})
+            self._safe_send(conn, {"t": "error", "msg": "The battle hath already begun"})
             return None
         free = [i for i in range(protocol.MAX_PLAYERS) if i not in self.names]
         if not free:
-            self._safe_send(conn, {"t": "error", "msg": "Room is full"})
+            self._safe_send(conn, {"t": "error", "msg": "The hall is full"})
             return None
         pid = free[0]
         self.clients[pid] = conn
@@ -145,7 +186,7 @@ class GameServer:
         kind = msg.get("t")
         now = time.monotonic()
         if kind == "start" and pid == self.host_id and self.game is None:
-            if len(self.names) >= protocol.MIN_PLAYERS:
+            if len(self.names) >= protocol.MIN_PLAYERS and self.questions_status != "loading":
                 self.game = OpeningPhase(sorted(self.names), self.deck.draw, now)
                 self._broadcast_lobby()
                 self._broadcast_state()
@@ -153,7 +194,7 @@ class GameServer:
             free = [i for i in range(protocol.MAX_PLAYERS) if i not in self.names]
             if free:
                 n = len(self.bots) + 1
-                self.names[free[0]] = "Bot" if n == 1 else f"Bot {n}"
+                self.names[free[0]] = "Automaton" if n == 1 else f"Automaton {'I' * n}"
                 self.bots[free[0]] = Bot(free[0])
                 self._broadcast_lobby()
         elif kind == "remove_bot" and pid == self.host_id and self.game is None:
@@ -191,7 +232,10 @@ class GameServer:
         return {"t": "lobby", "room": self.room_name, "host": self.host_id,
                 "started": self.game is not None,
                 "players": [{"id": i, "name": n, "bot": i in self.bots}
-                            for i, n in sorted(self.names.items())]}
+                            for i, n in sorted(self.names.items())],
+                "questions": {"category": self.category, "difficulty": self.difficulty,
+                              "status": self.questions_status, "count": len(self.deck),
+                              "loading": not self.fetch_done}}
 
     def _broadcast_lobby(self):
         msg = self._lobby_msg()

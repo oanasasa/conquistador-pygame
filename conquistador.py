@@ -4,7 +4,7 @@ import time
 
 import pygame
 
-from net import protocol
+from net import opentdb, protocol
 from net.client import GameClient
 from net.discovery import RoomAnnouncer, RoomBrowser
 from net.server import GameServer
@@ -32,6 +32,8 @@ class App:
         self.announcer = None
         self.client = None
         self.error = None
+        self.settings_for = None     # {"with_bot": bool} while the campaign popup is open
+        self.campaign = {"category": opentdb.ALL, "difficulty": "any"}
         self._reset_session()
         self.scene_key = None
         self.scene = None
@@ -52,12 +54,21 @@ class App:
         self.browser = RoomBrowser()
         self.error = self.browser.error
 
-    def create_room(self, with_bot=False):
-        server = GameServer(f"{self.name}'s room")
+    def open_settings(self, with_bot=False):
+        """Ask for the question category and difficulty before creating a room."""
+        self.error = None
+        self.settings_for = {"with_bot": with_bot}
+
+    def close_settings(self):
+        self.settings_for = None
+
+    def create_room(self, with_bot=False, category=None, difficulty="any"):
+        self.settings_for = None
+        server = GameServer(f"{self.name}'s hall", category=category, difficulty=difficulty)
         try:
             server.start()
         except OSError:
-            self.error = f"Can't host: port {protocol.GAME_PORT} is already in use"
+            self.error = f"Thou canst not raise a hall: port {protocol.GAME_PORT} is already taken"
             return
         self.server = server
         self.announcer = RoomAnnouncer(server)
@@ -70,7 +81,7 @@ class App:
         try:
             self.client = GameClient(ip, port, self.name)
         except OSError:
-            self.error = f"Could not connect to {ip}"
+            self.error = f"No hall answered at {ip}"
             self._stop_hosting()
 
     def leave(self):
@@ -130,7 +141,7 @@ class App:
             elif kind == "error":
                 self.error = msg["msg"]
             elif kind == "disconnected":
-                error = self.error or "Disconnected from the room"
+                error = self.error or "Thou wast parted from the hall"
                 self.leave()
                 self.error = error
                 return
@@ -141,7 +152,7 @@ class App:
         if not self.name:
             return "name"
         if not self.client:
-            return "lobby"
+            return "settings" if self.settings_for is not None else "lobby"
         if not self.state:
             return "room"
         return self.state["phase"]
@@ -152,6 +163,7 @@ class App:
             self.scene_key = key
             self.scene = {
                 "name": scenes.NameEntry, "lobby": scenes.Lobby, "room": scenes.Room,
+                "settings": scenes.CampaignSettings,
                 "pick": scenes.MapPick, "duel": scenes.Duel, "done": scenes.Done,
                 "grab_select": scenes.GrabSelect, "grab_question": scenes.GrabQuestion,
                 "war_select": scenes.WarSelect, "war_duel": scenes.WarDuel,

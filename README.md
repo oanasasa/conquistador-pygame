@@ -31,7 +31,7 @@ macOS may ask to allow incoming connections for Python; allow it so others can j
 ## Controls
 
 - Mouse: buttons and picking regions
-- `1`-`3`: answer a question
+- `1`-`4`: answer a question
 - `Esc`: quit
 
 ## Map data
@@ -41,6 +41,16 @@ The map in `data/map.json` is built from [Natural Earth](https://www.naturaleart
 The game reads only that file and makes no network calls. To change how
 counties are grouped into lands, edit `LANDS` in the script and run it again
 (the script's docstring says which files to download).
+
+## Questions
+
+When you raise a hall (create a room), you pick the lore from a list of every
+[Open Trivia Database](https://opentdb.com) category, or all of them mixed, and
+the rank of trial (difficulty: Any, Squire, Knight or King). The host's game
+then fetches matching questions, licensed
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). They are kept
+in memory for that room only; nothing is saved. Without internet the game uses
+the few built-in questions in `data/questions.json`.
 
 ## Tests
 
